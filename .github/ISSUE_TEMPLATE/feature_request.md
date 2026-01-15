@@ -1,20 +1,20 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
+about: 새로운 기능 개발 요청을 기록합니다.
 title: ''
 labels: ''
 assignees: ''
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## 📌 설명
+어떤 기능을 개발하려는지 간단히 적어주세요.
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+## ✅ 작업 항목
+- [ ] 엔티티/DB 작업
+- [ ] 서비스/비즈니스 로직
+- [ ] 컨트롤러/엔드포인트
+- [ ] 테스트 코드 작성
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
-
-**Additional context**
-Add any other context or screenshots about the feature request here.
+## 🔗 참고 자료
+관련 문서, 링크 등을 적어주세요.
