@@ -5,78 +5,68 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { createCommunity } from "@/lib/api" 
 
 interface CreateCommunityModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void 
 }
 
-export function CreateCommunityModal({ open, onOpenChange }: CreateCommunityModalProps) {
-  const [formData, setFormData] = useState({
-    title: "",
-    category: "",
-    description: "",
-  })
+export function CreateCommunityModal({ open, onOpenChange, onSuccess }: CreateCommunityModalProps) {
+  const [name, setName] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = () => {
-    console.log("커뮤니티 생성:", formData)
-    // 여기에 생성 로직 추가
-    onOpenChange(false)
-    setFormData({ title: "", category: "", description: "" })
+  const handleSubmit = async () => {
+    if (!name.trim()) return
+
+    setIsLoading(true)
+    try {
+      await createCommunity(name)
+      
+      alert("커뮤니티가 생성되었습니다!")
+      setName("") // 입력창 초기화
+      onOpenChange(false) // 모달 닫기
+      
+      // 목록 새로고침
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        window.location.reload() // 콜백 없으면 페이지 새로고침
+      }
+    } catch (error) {
+      console.error(error)
+      alert("커뮤니티 생성에 실패했습니다.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-card border-border">
+      <DialogContent className="sm:max-w-[400px] bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-foreground">새 커뮤니티 생성</DialogTitle>
+          <DialogTitle className="text-foreground">새 커뮤니티 만들기</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-foreground">
+            <Label htmlFor="name" className="text-foreground">
               커뮤니티 이름
             </Label>
             <Input
-              id="title"
-              placeholder="커뮤니티 이름을 입력하세요"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              id="name"
+              placeholder="예: 운동, 맛집탐방, 코딩질문"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="bg-background border-border"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSubmit()
+              }}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="category" className="text-foreground">
-              카테고리
-            </Label>
-            <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-              <SelectTrigger className="bg-background border-border">
-                <SelectValue placeholder="카테고리 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="free">자유</SelectItem>
-                <SelectItem value="question">질문</SelectItem>
-                <SelectItem value="party">팟모집</SelectItem>
-                <SelectItem value="info">정보공유</SelectItem>
-                <SelectItem value="job">채용공고</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-foreground">
-              설명
-            </Label>
-            <Textarea
-              id="description"
-              placeholder="커뮤니티에 대한 설명을 입력하세요"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="bg-background border-border min-h-[100px]"
-            />
+            <p className="text-xs text-muted-foreground">
+              생성된 커뮤니티는 상단 탭에 즉시 추가됩니다.
+            </p>
           </div>
         </div>
 
@@ -87,9 +77,9 @@ export function CreateCommunityModal({ open, onOpenChange }: CreateCommunityModa
           <Button
             onClick={handleSubmit}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
-            disabled={!formData.title || !formData.category}
+            disabled={!name.trim() || isLoading}
           >
-            생성하기
+            {isLoading ? "생성 중..." : "생성하기"}
           </Button>
         </DialogFooter>
       </DialogContent>
