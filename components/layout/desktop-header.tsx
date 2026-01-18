@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Bell, Search, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,7 +24,7 @@ export function DesktopHeader({ title }: DesktopHeaderProps) {
           <Input placeholder="검색..." className="w-64 pl-9" />
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - 익명 투표 만들기 제거, Link 추가 */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="sm" className="gap-2">
@@ -31,20 +32,30 @@ export function DesktopHeader({ title }: DesktopHeaderProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>자유 게시글</DropdownMenuItem>
-            <DropdownMenuItem>질문하기</DropdownMenuItem>
-            <DropdownMenuItem>팟 모집</DropdownMenuItem>
-            <DropdownMenuItem>익명 투표 만들기</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/community/write?category=free">자유 게시글</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/community/write?category=question">질문하기</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/community/write?category=team">팟 모집</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/community/write?category=job">채용공고</Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-destructive p-0 text-xs text-destructive-foreground">
-            2
-          </Badge>
-        </Button>
+        {/* Notifications - Link로 변경 */}
+        <Link href="/notifications">
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-destructive p-0 text-xs text-destructive-foreground">
+              2
+            </Badge>
+          </Button>
+        </Link>
 
         {/* User Avatar */}
         <DropdownMenu>
@@ -57,9 +68,15 @@ export function DesktopHeader({ title }: DesktopHeaderProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>프로필</DropdownMenuItem>
-            <DropdownMenuItem>설정</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">로그아웃</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/mypage">프로필</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/settings">설정</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive" asChild>
+              <Link href="/login">로그아웃</Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

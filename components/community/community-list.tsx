@@ -1,9 +1,8 @@
 "use client"
-
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Heart, MessageCircle, Users } from "lucide-react"
+import { Heart, MessageCircle, Users, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
@@ -23,6 +22,7 @@ interface Post {
   partyInfo?: {
     currentCount: number
     maxCount: number
+    isRecruiting: boolean
   }
 }
 
@@ -47,7 +47,7 @@ const mockPosts: Post[] = [
     commentCount: 5,
     createdAt: "1시간 전",
     isParty: true,
-    partyInfo: { currentCount: 3, maxCount: 4 },
+    partyInfo: { currentCount: 3, maxCount: 4, isRecruiting: true },
   },
   {
     id: "3",
@@ -69,6 +69,30 @@ const mockPosts: Post[] = [
     commentCount: 7,
     createdAt: "3시간 전",
   },
+  {
+    id: "5",
+    title: "내일 아침 운동 같이 하실 분!",
+    content: "N1 헬스장에서 7시에 만나요",
+    category: "팟모집",
+    author: { nickname: "몰입하는 5" },
+    likeCount: 6,
+    commentCount: 3,
+    createdAt: "4시간 전",
+    isParty: true,
+    partyInfo: { currentCount: 2, maxCount: 3, isRecruiting: true },
+  },
+  {
+    id: "6",
+    title: "주말 등산 팟 (완료)",
+    content: "계룡산 등산 다녀왔습니다!",
+    category: "팟모집",
+    author: { nickname: "몰입하는 19" },
+    likeCount: 10,
+    commentCount: 12,
+    createdAt: "1일 전",
+    isParty: true,
+    partyInfo: { currentCount: 5, maxCount: 5, isRecruiting: false },
+  },
 ]
 
 const categoryColors: Record<string, string> = {
@@ -76,58 +100,113 @@ const categoryColors: Record<string, string> = {
   질문: "bg-purple-100 text-purple-700",
   팟모집: "bg-green-100 text-green-700",
   정보공유: "bg-orange-100 text-orange-700",
+  채용공고: "bg-red-100 text-red-700",
 }
 
-export function CommunityList() {
-  return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      {mockPosts.map((post) => (
-        <Link key={post.id} href={`/community/${post.id}`}>
-          <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-4">
-                <Avatar className="h-10 w-10 shrink-0">
-                  <AvatarImage src={post.author.imageUrl || "/placeholder.svg"} />
-                  <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                    {post.author.nickname.slice(-2)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-2">
-                    <Badge className={cn("text-xs px-2 py-0.5", categoryColors[post.category] || "bg-muted")}>
-                      {post.category}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">{post.author.nickname}</span>
-                    <span className="text-xs text-muted-foreground">·</span>
-                    <span className="text-xs text-muted-foreground">{post.createdAt}</span>
-                  </div>
-                  <h3 className="font-semibold text-base mb-2 line-clamp-1">{post.title}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{post.content}</p>
+interface CommunityListProps {
+  showPartyBanner?: boolean
+}
 
-                  <div className="flex items-center gap-4 mt-4">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Heart className="h-4 w-4" />
-                      <span className="text-sm">{post.likeCount}</span>
+export function CommunityList({ showPartyBanner = false }: CommunityListProps) {
+  const recruitingParties = mockPosts.filter((post) => post.isParty && post.partyInfo?.isRecruiting)
+
+  return (
+    <div className="space-y-6">
+      {showPartyBanner && recruitingParties.length > 0 && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                <span className="font-semibold text-foreground">모집 중인 팟</span>
+                <Badge className="bg-primary text-primary-foreground">{recruitingParties.length}</Badge>
+              </div>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {recruitingParties.map((party) => (
+                <Link key={party.id} href={`/community/${party.id}`}>
+                  <div className="flex items-center gap-3 px-4 py-3 bg-background border rounded-lg hover:border-primary transition-colors min-w-[280px] cursor-pointer">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{party.title}</p>
+                      <p className="text-sm text-muted-foreground">{party.author.nickname}</p>
                     </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <MessageCircle className="h-4 w-4" />
-                      <span className="text-sm">{post.commentCount}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant="outline" className="text-primary border-primary">
+                        {party.partyInfo?.currentCount}/{party.partyInfo?.maxCount}
+                      </Badge>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    {post.isParty && post.partyInfo && (
-                      <div className="flex items-center gap-1.5 text-primary ml-auto">
-                        <Users className="h-4 w-4" />
-                        <span className="text-sm font-medium">
-                          {post.partyInfo.currentCount}/{post.partyInfo.maxCount}
-                        </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 기존 게시글 목록 */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {mockPosts.map((post) => (
+          <Link key={post.id} href={`/community/${post.id}`}>
+            <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-10 w-10 shrink-0">
+                    <AvatarImage src={post.author.imageUrl || "/placeholder.svg"} />
+                    <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                      {post.author.nickname.slice(-2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                      <Badge className={cn("text-xs px-2 py-0.5", categoryColors[post.category] || "bg-muted")}>
+                        {post.category}
+                      </Badge>
+                      {post.isParty && (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-xs",
+                            post.partyInfo?.isRecruiting
+                              ? "border-green-500 text-green-600"
+                              : "border-muted-foreground text-muted-foreground",
+                          )}
+                        >
+                          {post.partyInfo?.isRecruiting ? "모집중" : "모집완료"}
+                        </Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground">{post.author.nickname}</span>
+                      <span className="text-xs text-muted-foreground">·</span>
+                      <span className="text-xs text-muted-foreground">{post.createdAt}</span>
+                    </div>
+                    <h3 className="font-semibold text-base mb-2 line-clamp-1">{post.title}</h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{post.content}</p>
+
+                    <div className="flex items-center gap-4 mt-4">
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Heart className="h-4 w-4" />
+                        <span className="text-sm">{post.likeCount}</span>
                       </div>
-                    )}
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <MessageCircle className="h-4 w-4" />
+                        <span className="text-sm">{post.commentCount}</span>
+                      </div>
+                      {post.isParty && post.partyInfo && (
+                        <div className="flex items-center gap-1.5 text-primary ml-auto">
+                          <Users className="h-4 w-4" />
+                          <span className="text-sm font-medium">
+                            {post.partyInfo.currentCount}/{post.partyInfo.maxCount}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      ))}
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }
