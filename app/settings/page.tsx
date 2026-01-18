@@ -1,25 +1,44 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { Bell, Moon, Shield, HelpCircle, FileText } from "lucide-react"
+import { Bell, LogOut, UserMinus } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function SettingsPage() {
-  const [notifications, setNotifications] = useState({
-    comments: true,
-    likes: true,
-    teams: true,
-    schedule: true,
-  })
-  const [darkMode, setDarkMode] = useState(false)
-  const [language, setLanguage] = useState("ko")
+  const router = useRouter()
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false)
+  const [showLeaveCompleteDialog, setShowLeaveCompleteDialog] = useState(false)
+
+  const handleLogout = () => {
+    router.push("/login")
+  }
+
+  const handleLeaveClass = () => {
+    setShowLeaveDialog(false)
+    setShowLeaveCompleteDialog(true)
+  }
+
+  const handleLeaveComplete = () => {
+    setShowLeaveCompleteDialog(false)
+    router.push("/login")
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -41,122 +60,72 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>댓글 알림</Label>
-                    <p className="text-sm text-muted-foreground">내 글에 댓글이 달리면 알림을 받습니다</p>
+                    <Label>전체 알림</Label>
+                    <p className="text-sm text-muted-foreground">모든 알림을 허용하거나 거부합니다</p>
                   </div>
-                  <Switch
-                    checked={notifications.comments}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, comments: checked })}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>좋아요 알림</Label>
-                    <p className="text-sm text-muted-foreground">내 글에 좋아요가 눌리면 알림을 받습니다</p>
-                  </div>
-                  <Switch
-                    checked={notifications.likes}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, likes: checked })}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>팟 모집 알림</Label>
-                    <p className="text-sm text-muted-foreground">팟 신청 결과를 알림으로 받습니다</p>
-                  </div>
-                  <Switch
-                    checked={notifications.teams}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, teams: checked })}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>일정 알림</Label>
-                    <p className="text-sm text-muted-foreground">분반 일정 알림을 받습니다</p>
-                  </div>
-                  <Switch
-                    checked={notifications.schedule}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, schedule: checked })}
-                  />
+                  <Switch checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
                 </div>
               </CardContent>
             </Card>
 
-            {/* 화면 설정 */}
+            {/* 계정 관리 */}
             <Card>
               <CardHeader>
-                <div className="flex items-center gap-3">
-                  <Moon className="h-5 w-5 text-primary" />
-                  <div>
-                    <CardTitle>화면 설정</CardTitle>
-                    <CardDescription>화면 테마와 언어를 설정합니다</CardDescription>
-                  </div>
-                </div>
+                <CardTitle>계정 관리</CardTitle>
+                <CardDescription>로그아웃 또는 분반을 나갈 수 있습니다</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>다크 모드</Label>
-                    <p className="text-sm text-muted-foreground">어두운 테마를 사용합니다</p>
-                  </div>
-                  <Switch checked={darkMode} onCheckedChange={setDarkMode} />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>언어</Label>
-                    <p className="text-sm text-muted-foreground">서비스 언어를 선택합니다</p>
-                  </div>
-                  <Select value={language} onValueChange={setLanguage}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ko">한국어</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 기타 */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <HelpCircle className="h-5 w-5 text-primary" />
-                  <div>
-                    <CardTitle>기타</CardTitle>
-                    <CardDescription>서비스 관련 정보</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button variant="ghost" className="w-full justify-start gap-3">
-                  <Shield className="h-4 w-4" />
-                  개인정보 처리방침
+              <CardContent className="space-y-3">
+                <Button variant="outline" className="w-full justify-start gap-3 bg-transparent" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4" />
+                  로그아웃
                 </Button>
-                <Button variant="ghost" className="w-full justify-start gap-3">
-                  <FileText className="h-4 w-4" />
-                  이용약관
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10 bg-transparent"
+                  onClick={() => setShowLeaveDialog(true)}
+                >
+                  <UserMinus className="h-4 w-4" />
+                  분반 나가기
                 </Button>
-                <Button variant="ghost" className="w-full justify-start gap-3">
-                  <HelpCircle className="h-4 w-4" />
-                  도움말
-                </Button>
-                <Separator className="my-2" />
-                <div className="px-3 py-2 text-sm text-muted-foreground">버전 1.0.0</div>
               </CardContent>
             </Card>
           </div>
         </main>
       </div>
+
+      {/* 분반 나가기 확인 다이얼로그 */}
+      <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>정말 탈퇴하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              분반에서 나가면 모든 활동 기록이 삭제되며, 다시 초대코드를 입력해야 입장할 수 있습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLeaveClass} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              탈퇴하기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 탈퇴 완료 다이얼로그 */}
+      <AlertDialog open={showLeaveCompleteDialog} onOpenChange={setShowLeaveCompleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>탈퇴 완료되었습니다</AlertDialogTitle>
+            <AlertDialogDescription>분반에서 성공적으로 나갔습니다. 로그인 페이지로 이동합니다.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleLeaveComplete}>확인</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

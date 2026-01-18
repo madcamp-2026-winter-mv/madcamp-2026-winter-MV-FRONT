@@ -14,6 +14,7 @@ interface Post {
   author: {
     nickname: string
     imageUrl?: string
+    isAnonymous?: boolean
   }
   likeCount: number
   commentCount: number
@@ -54,7 +55,7 @@ const mockPosts: Post[] = [
     title: "Flutter vs React Native 어떤거 쓰시나요?",
     content: "다음 프로젝트에 뭘 쓸지 고민 중인데, 각각 장단점이 뭔가요?",
     category: "질문",
-    author: { nickname: "몰입하는 33" },
+    author: { nickname: "익명", isAnonymous: true },
     likeCount: 12,
     commentCount: 15,
     createdAt: "2시간 전",
@@ -93,6 +94,16 @@ const mockPosts: Post[] = [
     isParty: true,
     partyInfo: { currentCount: 5, maxCount: 5, isRecruiting: false },
   },
+  {
+    id: "7",
+    title: "[네이버] 2026 신입 개발자 채용",
+    content: "네이버에서 신입 개발자를 모집합니다. 관심 있으신 분들은 확인해주세요.",
+    category: "채용공고",
+    author: { nickname: "몰입하는 3" },
+    likeCount: 32,
+    commentCount: 5,
+    createdAt: "5시간 전",
+  },
 ]
 
 const categoryColors: Record<string, string> = {
@@ -103,16 +114,34 @@ const categoryColors: Record<string, string> = {
   채용공고: "bg-red-100 text-red-700",
 }
 
-interface CommunityListProps {
-  showPartyBanner?: boolean
+const categoryMap: Record<string, string> = {
+  전체: "전체",
+  자유: "자유",
+  질문: "질문",
+  팟모집: "팟모집",
+  정보공유: "정보공유",
+  채용공고: "채용공고",
 }
 
-export function CommunityList({ showPartyBanner = false }: CommunityListProps) {
+interface CommunityListProps {
+  selectedCategory?: string
+}
+
+export function CommunityList({ selectedCategory = "전체" }: CommunityListProps) {
+  const isPartyTab = selectedCategory === "팟모집"
+  
+  // 카테고리에 따라 필터링
+  const filteredPosts = selectedCategory === "전체" 
+    ? mockPosts.filter(post => !post.isParty) // 전체에서는 팟모집 제외
+    : mockPosts.filter(post => post.category === selectedCategory)
+  
+  // 팟모집 탭에서만 모집 중인 팟 배너 표시
   const recruitingParties = mockPosts.filter((post) => post.isParty && post.partyInfo?.isRecruiting)
 
   return (
     <div className="space-y-6">
-      {showPartyBanner && recruitingParties.length > 0 && (
+      {/* 팟모집 탭에서만 모집 중인 팟 배너 표시 */}
+      {isPartyTab && recruitingParties.length > 0 && (
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -144,18 +173,24 @@ export function CommunityList({ showPartyBanner = false }: CommunityListProps) {
         </Card>
       )}
 
-      {/* 기존 게시글 목록 */}
+      {/* 게시글 목록 */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {mockPosts.map((post) => (
+        {filteredPosts.map((post) => (
           <Link key={post.id} href={`/community/${post.id}`}>
             <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer">
               <CardContent className="p-5">
                 <div className="flex items-start gap-4">
                   <Avatar className="h-10 w-10 shrink-0">
-                    <AvatarImage src={post.author.imageUrl || "/placeholder.svg"} />
-                    <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                      {post.author.nickname.slice(-2)}
-                    </AvatarFallback>
+                    {post.author.isAnonymous ? (
+                      <AvatarFallback className="bg-muted text-muted-foreground text-xs">익명</AvatarFallback>
+                    ) : (
+                      <>
+                        <AvatarImage src={post.author.imageUrl || "/placeholder.svg"} />
+                        <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                          {post.author.nickname.slice(-2)}
+                        </AvatarFallback>
+                      </>
+                    )}
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -207,6 +242,12 @@ export function CommunityList({ showPartyBanner = false }: CommunityListProps) {
           </Link>
         ))}
       </div>
+
+      {filteredPosts.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>해당 카테고리에 게시글이 없습니다.</p>
+        </div>
+      )}
     </div>
   )
 }

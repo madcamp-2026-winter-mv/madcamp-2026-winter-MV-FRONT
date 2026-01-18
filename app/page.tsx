@@ -5,7 +5,6 @@ import { TodaySchedule } from "@/components/dashboard/today-schedule"
 import { TodayPresenter } from "@/components/dashboard/today-presenter"
 import { HotPosts } from "@/components/dashboard/hot-posts"
 import { QuickLinks } from "@/components/dashboard/quick-links"
-import { RecentActivity } from "@/components/dashboard/recent-activity"
 
 export default function HomePage() {
   return (
@@ -32,12 +31,9 @@ export default function HomePage() {
             <HotPosts />
           </div>
 
-          {/* 하단 영역: 빠른 링크 + 최근 활동 */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* 하단 영역: 빠른 링크 */}
+          <div className="grid grid-cols-1 gap-6">
             <QuickLinks />
-            <div className="lg:col-span-2">
-              <RecentActivity />
-            </div>
           </div>
         </main>
       </div>

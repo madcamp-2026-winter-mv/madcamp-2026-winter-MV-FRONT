@@ -1,25 +1,25 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
 import { CommunityList } from "@/components/community/community-list"
 import { CategoryTabs } from "@/components/community/category-tabs"
 import { CreateCommunityModal } from "@/components/community/create-community-modal"
+import { WritePostModal } from "@/components/community/write-post-modal"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, PenSquare, Users } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Plus, PenSquare } from "lucide-react"
 
 export default function CommunityPage() {
-  const router = useRouter()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isWriteModalOpen, setIsWriteModalOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState("전체")
 
-  const handleWriteClick = (type: string) => {
-    router.push(`/community/write?type=${type}`)
-  }
+  // 전체 탭에서는 글 작성 불가
+  const canWrite = selectedCategory !== "전체"
+  // 팟모집 탭에서만 팟 모집 글 작성 가능
+  const isPartyTab = selectedCategory === "팟모집"
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,38 +35,20 @@ export default function CommunityPage() {
               <div className="flex items-center justify-between mb-4">
                 <CategoryTabs onCategoryChange={setSelectedCategory} />
                 <div className="flex items-center gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                        <PenSquare className="h-4 w-4 mr-2" />새 글 작성
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleWriteClick("general")}>
-                        <PenSquare className="h-4 w-4 mr-2" />
-                        자유 게시글
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleWriteClick("question")}>
-                        <PenSquare className="h-4 w-4 mr-2" />
-                        질문하기
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleWriteClick("team")}>
-                        <Users className="h-4 w-4 mr-2" />팟 모집
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleWriteClick("job")}>
-                        <PenSquare className="h-4 w-4 mr-2" />
-                        채용공고
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <Button onClick={() => setIsCreateModalOpen(true)} variant="outline">
+                  {canWrite && (
+                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsWriteModalOpen(true)}>
+                      <PenSquare className="h-4 w-4 mr-2" />
+                      {isPartyTab ? "팟 모집하기" : "새 글 작성"}
+                    </Button>
+                  )}
+                  <Button onClick={() => setIsCreateModalOpen(true)} variant="outline" className="bg-transparent">
                     <Plus className="h-4 w-4 mr-2" />
                     커뮤니티 생성
                   </Button>
                 </div>
               </div>
               <div className="mt-4">
-                <CommunityList showPartyBanner={selectedCategory === "팟모집" || selectedCategory === "전체"} />
+                <CommunityList selectedCategory={selectedCategory} />
               </div>
             </div>
 
@@ -88,6 +70,12 @@ export default function CommunityPage() {
       </div>
 
       <CreateCommunityModal open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} />
+      <WritePostModal 
+        open={isWriteModalOpen} 
+        onOpenChange={setIsWriteModalOpen} 
+        category={selectedCategory}
+        isPartyOnly={isPartyTab}
+      />
     </div>
   )
 }

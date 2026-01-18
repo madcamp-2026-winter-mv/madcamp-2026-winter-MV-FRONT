@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
@@ -13,19 +13,26 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, ImagePlus, X, Users, Plus, Trash2, BarChart3 } from "lucide-react"
 
 export function WriteForm() {
-  const searchParams = useSearchParams()
   const router = useRouter()
-  const writeType = searchParams.get("type") || "general"
-  const isPartyPost = writeType === "team"
+
+  // 글 유형 선택 (일반 글 vs 팟 모집)
+  const [postType, setPostType] = useState<"general" | "team">("general")
+  const isPartyPost = postType === "team"
+
+  // 일반 글 카테고리
+  const [category, setCategory] = useState("자유")
 
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [images, setImages] = useState<string[]>([])
 
-  const [isAnonymous, setIsAnonymous] = useState(false)
+  // 작성자 유형 (익명/닉네임)
+  const [authorType, setAuthorType] = useState<"nickname" | "anonymous">("nickname")
 
   // 팟 모집 전용
   const [maxParticipants, setMaxParticipants] = useState(4)
@@ -34,21 +41,6 @@ export function WriteForm() {
   const [voteTitle, setVoteTitle] = useState("")
   const [voteOptions, setVoteOptions] = useState(["", ""])
   const [allowMultipleVotes, setAllowMultipleVotes] = useState(false)
-
-  const getTypeLabel = () => {
-    switch (writeType) {
-      case "general":
-        return "자유 게시글"
-      case "question":
-        return "질문하기"
-      case "team":
-        return "팟 모집"
-      case "job":
-        return "채용공고"
-      default:
-        return "새 글"
-    }
-  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,7 +78,7 @@ export function WriteForm() {
       <DesktopSidebar />
 
       <div className="ml-64">
-        <DesktopHeader title={`${getTypeLabel()} 작성`} />
+        <DesktopHeader title="새 글 작성" />
 
         <main className="p-6">
           <div className="mb-6">
@@ -100,18 +92,80 @@ export function WriteForm() {
 
           <Card className="mx-auto max-w-3xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {isPartyPost && <Users className="h-5 w-5 text-primary" />}
-                {getTypeLabel()} 작성
-              </CardTitle>
-              <CardDescription>
-                {isPartyPost
-                  ? "함께할 팟 멤버를 모집해보세요. 댓글 작성자 중 참가자를 선택할 수 있습니다."
-                  : "자유롭게 글을 작성해보세요."}
-              </CardDescription>
+              <CardTitle>새 글 작성</CardTitle>
+              <CardDescription>커뮤니티에 새로운 글을 작성합니다.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* 글 유형 선택 */}
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">글 유형</Label>
+                  <RadioGroup
+                    value={postType}
+                    onValueChange={(value) => {
+                      setPostType(value as "general" | "team")
+                      if (value === "team") {
+                        setAuthorType("nickname") // 팟 모집은 익명 불가
+                      }
+                    }}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="general" id="general" />
+                      <Label htmlFor="general" className="cursor-pointer">일반 글</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="team" id="team" />
+                      <Label htmlFor="team" className="cursor-pointer flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        팟 모집
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* 일반 글: 카테고리 선택 */}
+                {!isPartyPost && (
+                  <div className="space-y-2">
+                    <Label>카테고리</Label>
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="카테고리 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="자유">자유</SelectItem>
+                        <SelectItem value="질문">질문</SelectItem>
+                        <SelectItem value="정보공유">정보공유</SelectItem>
+                        <SelectItem value="채용공고">채용공고</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* 작성자 유형 선택 (익명/닉네임) */}
+                <div className="space-y-3 p-4 rounded-lg bg-muted/50">
+                  <Label className="text-base font-semibold">작성자 표시</Label>
+                  {isPartyPost ? (
+                    <p className="text-sm text-muted-foreground">팟 모집 글은 익명으로 작성할 수 없습니다.</p>
+                  ) : (
+                    <RadioGroup
+                      value={authorType}
+                      onValueChange={(value) => setAuthorType(value as "nickname" | "anonymous")}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="nickname" id="nickname" />
+                        <Label htmlFor="nickname" className="cursor-pointer">닉네임으로 작성</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="anonymous" id="anonymous" />
+                        <Label htmlFor="anonymous" className="cursor-pointer">익명으로 작성</Label>
+                      </div>
+                    </RadioGroup>
+                  )}
+                </div>
+
+                {/* 팟 모집: 모집 인원 설정 */}
                 {isPartyPost && (
                   <div className="space-y-2 p-4 rounded-lg border-2 border-primary/30 bg-primary/5">
                     <Label htmlFor="maxParticipants" className="flex items-center gap-2 font-semibold">
@@ -136,6 +190,7 @@ export function WriteForm() {
                   </div>
                 )}
 
+                {/* 제목 */}
                 <div className="space-y-2">
                   <Label htmlFor="title">제목</Label>
                   <Input
@@ -147,6 +202,7 @@ export function WriteForm() {
                   />
                 </div>
 
+                {/* 내용 */}
                 <div className="space-y-2">
                   <Label htmlFor="content">내용</Label>
                   <Textarea
@@ -161,25 +217,7 @@ export function WriteForm() {
                   />
                 </div>
 
-                {!isPartyPost && (
-                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
-                    <Checkbox
-                      id="anonymous"
-                      checked={isAnonymous}
-                      onCheckedChange={(checked) => setIsAnonymous(checked as boolean)}
-                    />
-                    <Label htmlFor="anonymous" className="cursor-pointer">
-                      익명으로 작성하기
-                    </Label>
-                    <span className="text-xs text-muted-foreground">(작성자가 &apos;익명&apos;으로 표시됩니다)</span>
-                  </div>
-                )}
-                {isPartyPost && (
-                  <div className="p-4 rounded-lg bg-muted/30 border border-muted">
-                    <p className="text-sm text-muted-foreground">팟 모집 글은 익명으로 작성할 수 없습니다.</p>
-                  </div>
-                )}
-
+                {/* 투표 추가 */}
                 <div className="space-y-4 p-4 rounded-lg border border-border">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -287,7 +325,7 @@ export function WriteForm() {
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t">
-                  <Button type="button" variant="outline" onClick={() => router.back()}>
+                  <Button type="button" variant="outline" className="bg-transparent" onClick={() => router.back()}>
                     취소
                   </Button>
                   <Button type="submit">{isPartyPost ? "팟 모집 시작" : "게시하기"}</Button>
