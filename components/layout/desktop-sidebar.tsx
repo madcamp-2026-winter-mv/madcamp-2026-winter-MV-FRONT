@@ -21,7 +21,7 @@ const navItems = [
 export function DesktopSidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
 
   const handleLogout = async () => {
     await logout()
@@ -45,7 +45,7 @@ export function DesktopSidebar() {
         <div className="border-b border-sidebar-border p-4">
           <div className="rounded-lg bg-sidebar-accent p-3">
             <p className="text-xs text-sidebar-foreground/60">현재 분반</p>
-            <p className="font-semibold text-sidebar-primary">MAD012</p>
+            <p className="font-semibold text-sidebar-primary">{user?.roomName ?? user?.roomId ?? "—"}</p>
             <p className="text-xs text-sidebar-foreground/60">2025 겨울학기</p>
           </div>
         </div>
