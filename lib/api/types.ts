@@ -12,7 +12,8 @@ declare const process: {
 // 
 // 중요: 백엔드 서버의 실제 접근 가능한 URL을 설정해야 합니다!
 // 현재 기본값은 프론트엔드 도메인인데, 이는 잘못된 설정입니다.
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.madcamp-view.com';
+// export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.madcamp-view.com';
+export const API_BASE_URL = 'https://api.madcamp-view.com';
 
 // API URL 확인용 (디버깅)
 if (typeof window !== 'undefined') {
