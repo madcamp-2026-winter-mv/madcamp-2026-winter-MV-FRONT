@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,46 +19,183 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Users, Copy, Edit, Trash2, Play, Square, Shuffle, Clock, RefreshCw } from "lucide-react"
-
-// Mock 데이터
-const mockMembers = [
-  { id: 1, name: "김몰입", email: "kim@kaist.ac.kr", attendance: 85 },
-  { id: 2, name: "이코딩", email: "lee@kaist.ac.kr", attendance: 92 },
-  { id: 3, name: "박개발", email: "park@kaist.ac.kr", attendance: 78 },
-  { id: 4, name: "최협업", email: "choi@kaist.ac.kr", attendance: 95 },
-  { id: 5, name: "정디자인", email: "jung@kaist.ac.kr", attendance: 88 },
-]
-
-const generateRandomCode = () => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-  let code = ""
-  for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return code
-}
+import { Users, Copy, Play, Shuffle, Clock, RefreshCw, Trash2, Loader2 } from "lucide-react"
+import { memberApi, adminApi } from "@/lib/api/api"
+import type { MemberResponseDto } from "@/lib/api/types"
 
 export default function AdminPage() {
-  const [isAttendanceActive, setIsAttendanceActive] = useState(false)
-  const [inviteCode, setInviteCode] = useState("A1B2C3D4")
-  const [selectedPresenter, setSelectedPresenter] = useState<string | null>(null)
+  const [myInfo, setMyInfo] = useState<MemberResponseDto | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const [inviteCode, setInviteCode] = useState("")
+  const [inviteLoading, setInviteLoading] = useState(false)
+
+  const [members, setMembers] = useState<MemberResponseDto[]>([])
+  const [membersLoading, setMembersLoading] = useState(false)
+
+  const [attendanceMinutes, setAttendanceMinutes] = useState(5)
+  const [attendanceLoading, setAttendanceLoading] = useState(false)
+
+  const [selectedPresenter, setSelectedPresenter] = useState<MemberResponseDto | null>(null)
+  const [presenterLoading, setPresenterLoading] = useState(false)
+
   const [isScheduleOpen, setIsScheduleOpen] = useState(false)
+  const [scheduleForm, setScheduleForm] = useState({ title: "", content: "", date: "", time: "09:00", important: false })
+  const [scheduleLoading, setScheduleLoading] = useState(false)
+  const [localSchedules, setLocalSchedules] = useState<{ id: string; title: string; time: string; type: string }[]>([])
+
+  const [kickTarget, setKickTarget] = useState<{ memberId: number; realName: string } | null>(null)
+  const [kickLoading, setKickLoading] = useState(false)
+
+  const roomId = myInfo?.roomId ?? null
+
+  const loadMyInfo = useCallback(async () => {
+    try {
+      setError(null)
+      const res = await memberApi.getMyInfo()
+      setMyInfo(res)
+    } catch (e: any) {
+      setError(e?.message || e?.error || "내 정보를 불러오지 못했습니다.")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const loadMembers = useCallback(async () => {
+    if (!roomId) return
+    setMembersLoading(true)
+    try {
+      const res = await adminApi.getRealNameAttendance(roomId)
+      setMembers(res)
+    } catch (e: any) {
+      setError(e?.message || e?.error || "출석 명단을 불러오지 못했습니다.")
+    } finally {
+      setMembersLoading(false)
+    }
+  }, [roomId])
+
+  useEffect(() => {
+    loadMyInfo()
+  }, [loadMyInfo])
+
+  useEffect(() => {
+    if (roomId) loadMembers()
+  }, [roomId, loadMembers])
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(inviteCode)
+    if (inviteCode) navigator.clipboard.writeText(inviteCode)
   }
 
-  const handleGenerateCode = () => {
-    setInviteCode(generateRandomCode())
+  const handleRefreshInviteCode = async () => {
+    if (!roomId) return
+    setInviteLoading(true)
+    try {
+      setError(null)
+      const newCode = await adminApi.refreshInviteCode(roomId)
+      setInviteCode(newCode)
+    } catch (e: any) {
+      setError(e?.message || e?.error || "초대 코드 생성에 실패했습니다.")
+    } finally {
+      setInviteLoading(false)
+    }
   }
 
-  const handleRandomPresenter = () => {
-    const randomIndex = Math.floor(Math.random() * mockMembers.length)
-    setSelectedPresenter(mockMembers[randomIndex].name)
+  const handleStartAttendance = async () => {
+    if (!roomId) return
+    setAttendanceLoading(true)
+    try {
+      setError(null)
+      await adminApi.startAttendance(roomId, attendanceMinutes)
+    } catch (e: any) {
+      setError(e?.message || e?.error || "출석 시작에 실패했습니다.")
+    } finally {
+      setAttendanceLoading(false)
+    }
   }
+
+  const handlePickPresenter = async () => {
+    if (!roomId) return
+    setPresenterLoading(true)
+    try {
+      setError(null)
+      const res = await adminApi.pickPresenter(roomId)
+      setSelectedPresenter(res)
+    } catch (e: any) {
+      setError(e?.message || e?.error || "발표자 선정에 실패했습니다.")
+    } finally {
+      setPresenterLoading(false)
+    }
+  }
+
+  const handleAddSchedule = async () => {
+    if (!roomId || !scheduleForm.title.trim() || !scheduleForm.date || !scheduleForm.time) return
+    const startTime = `${scheduleForm.date}T${scheduleForm.time}:00`
+    setScheduleLoading(true)
+    try {
+      setError(null)
+      await adminApi.addSchedule(roomId, {
+        title: scheduleForm.title.trim(),
+        content: scheduleForm.content.trim(),
+        startTime,
+        important: scheduleForm.important,
+      })
+      setLocalSchedules((prev) => [
+        ...prev,
+        { id: `local-${Date.now()}`, title: scheduleForm.title, time: `${scheduleForm.date} ${scheduleForm.time}`, type: scheduleForm.important ? "중요" : "일반" },
+      ])
+      setScheduleForm({ title: "", content: "", date: "", time: "09:00", important: false })
+      setIsScheduleOpen(false)
+    } catch (e: any) {
+      setError(e?.message || e?.error || "일정 등록에 실패했습니다.")
+    } finally {
+      setScheduleLoading(false)
+    }
+  }
+
+  const handleKick = async () => {
+    if (!roomId || !kickTarget) return
+    setKickLoading(true)
+    try {
+      setError(null)
+      await adminApi.kickMember(roomId, kickTarget.memberId)
+      setKickTarget(null)
+      loadMembers()
+    } catch (e: any) {
+      setError(e?.message || e?.error || "강제 탈퇴에 실패했습니다.")
+    } finally {
+      setKickLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (!roomId) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DesktopSidebar />
+        <div className="ml-64">
+          <DesktopHeader title="관리자" />
+          <main className="p-6">
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-muted-foreground text-center py-8">분반에 가입한 후 관리자 기능을 사용할 수 있습니다.</p>
+              </CardContent>
+            </Card>
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  const avgRate = members.length > 0 ? members.reduce((s, m) => s + (m.attendanceRate || 0), 0) / members.length : 0
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,6 +205,12 @@ export default function AdminPage() {
         <DesktopHeader title="관리자" />
 
         <main className="p-6">
+          {error && (
+            <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+
           <Tabs defaultValue="class" className="space-y-6">
             <TabsList className="grid w-full max-w-2xl grid-cols-5">
               <TabsTrigger value="class">분반 관리</TabsTrigger>
@@ -77,36 +220,26 @@ export default function AdminPage() {
               <TabsTrigger value="schedule">일정 등록</TabsTrigger>
             </TabsList>
 
-            {/* 분반 관리 탭 - 새 분반 생성 기능 제거 */}
+            {/* 분반 관리 */}
             <TabsContent value="class" className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
-                {/* 현재 분반 정보 */}
                 <Card>
                   <CardHeader>
                     <CardTitle>현재 분반 정보</CardTitle>
-                    <CardDescription>분반 정보를 확인하고 편집합니다</CardDescription>
+                    <CardDescription>분반 정보를 확인합니다</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label>분반 코드</Label>
-                      <Input defaultValue="MAD012" />
+                      <Label>분반 ID</Label>
+                      <Input value={String(roomId)} readOnly />
                     </div>
                     <div className="space-y-2">
                       <Label>분반명</Label>
-                      <Input defaultValue="2025 겨울학기 12분반" />
+                      <Input value={myInfo?.roomName || ""} readOnly />
                     </div>
-                    <div className="space-y-2">
-                      <Label>설명</Label>
-                      <Textarea defaultValue="몰입캠프 2025년 겨울학기 12분반입니다." />
-                    </div>
-                    <Button className="w-full">
-                      <Edit className="mr-2 h-4 w-4" />
-                      저장하기
-                    </Button>
                   </CardContent>
                 </Card>
 
-                {/* 초대 코드 - 8자리 랜덤 코드로 변경 */}
                 <Card>
                   <CardHeader>
                     <CardTitle>초대 코드</CardTitle>
@@ -114,13 +247,18 @@ export default function AdminPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-2">
-                      <Input value={inviteCode} readOnly className="font-mono text-xl tracking-widest text-center" />
-                      <Button variant="outline" size="icon" onClick={handleCopyCode}>
+                      <Input
+                        value={inviteCode || "새 코드 생성으로 확인"}
+                        readOnly
+                        className="font-mono text-xl tracking-widest text-center"
+                      />
+                      <Button variant="outline" size="icon" onClick={handleCopyCode} disabled={!inviteCode}>
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
-                    <Button onClick={handleGenerateCode} variant="outline" className="w-full bg-transparent">
-                      <RefreshCw className="mr-2 h-4 w-4" />새 코드 생성
+                    <Button onClick={handleRefreshInviteCode} variant="outline" className="w-full bg-transparent" disabled={inviteLoading}>
+                      {inviteLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                      새 코드 생성
                     </Button>
                     <div className="rounded-lg border border-border bg-muted/50 p-4">
                       <p className="text-sm text-muted-foreground">
@@ -132,136 +270,94 @@ export default function AdminPage() {
               </div>
             </TabsContent>
 
-            {/* 출석 관리 탭 */}
+            {/* 출석 관리 */}
             <TabsContent value="attendance" className="space-y-6">
               <div className="grid gap-6 md:grid-cols-3">
-                {/* 출석 시작/종료 */}
                 <Card>
                   <CardHeader>
                     <CardTitle>출석 체크</CardTitle>
-                    <CardDescription>출석 체크를 시작하거나 종료합니다</CardDescription>
+                    <CardDescription>출석 체크를 시작합니다 (지정 시간 후 자동 종료)</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-center gap-4">
-                      {isAttendanceActive ? (
-                        <div className="flex items-center gap-2 text-green-600">
-                          <span className="relative flex h-3 w-3">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                            <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500"></span>
-                          </span>
-                          출석 진행중
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          출석 대기중
-                        </div>
-                      )}
+                    <div className="space-y-2">
+                      <Label>출석 허용 시간 (분)</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={60}
+                        value={attendanceMinutes}
+                        onChange={(e) => setAttendanceMinutes(Number(e.target.value) || 5)}
+                      />
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => setIsAttendanceActive(true)}
-                        disabled={isAttendanceActive}
-                        className="flex-1"
-                      >
-                        <Play className="mr-2 h-4 w-4" />
-                        시작
-                      </Button>
-                      <Button
-                        onClick={() => setIsAttendanceActive(false)}
-                        disabled={!isAttendanceActive}
-                        variant="destructive"
-                        className="flex-1"
-                      >
-                        <Square className="mr-2 h-4 w-4" />
-                        종료
-                      </Button>
-                    </div>
+                    <Button onClick={handleStartAttendance} className="w-full" disabled={attendanceLoading}>
+                      {attendanceLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                      출석 시작
+                    </Button>
                   </CardContent>
                 </Card>
 
-                {/* 오늘 출석 현황 */}
                 <Card className="md:col-span-2">
                   <CardHeader>
-                    <CardTitle>오늘 출석 현황</CardTitle>
-                    <CardDescription>2025년 1월 15일</CardDescription>
+                    <CardTitle>출석 명단</CardTitle>
+                    <CardDescription>분반 멤버와 출석률</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-4 mb-4">
                       <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
-                        <p className="text-3xl font-bold text-foreground">24</p>
+                        <p className="text-3xl font-bold text-foreground">{members.length}</p>
                         <p className="text-sm text-muted-foreground">전체 인원</p>
                       </div>
-                      <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
-                        <p className="text-3xl font-bold text-green-600">22</p>
-                        <p className="text-sm text-green-600">출석</p>
+                      <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
+                        <p className="text-3xl font-bold text-foreground">{Math.round(avgRate)}%</p>
+                        <p className="text-sm text-muted-foreground">평균 출석률</p>
                       </div>
-                      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center">
-                        <p className="text-3xl font-bold text-red-600">2</p>
-                        <p className="text-sm text-red-600">결석</p>
+                      <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
+                        <p className="text-3xl font-bold text-foreground">{members.filter((m) => (m.attendanceRate || 0) >= 90).length}</p>
+                        <p className="text-sm text-muted-foreground">출석률 90% 이상</p>
                       </div>
                     </div>
+                    {membersLoading ? (
+                      <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>이름</TableHead>
+                            <TableHead>이메일</TableHead>
+                            <TableHead>출석률</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {members.map((m) => (
+                            <TableRow key={m.email}>
+                              <TableCell className="font-medium">{m.realName}</TableCell>
+                              <TableCell className="text-muted-foreground">{m.email}</TableCell>
+                              <TableCell><Badge variant={m.attendanceRate >= 90 ? "default" : "secondary"}>{Math.round(m.attendanceRate)}%</Badge></TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
                   </CardContent>
                 </Card>
               </div>
-
-              {/* 출석 기록 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>전체 출석 기록</CardTitle>
-                  <CardDescription>날짜별 출석 현황을 확인합니다</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>날짜</TableHead>
-                        <TableHead>전체 인원</TableHead>
-                        <TableHead>출석</TableHead>
-                        <TableHead>결석</TableHead>
-                        <TableHead>출석률</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[
-                        { date: "2025-01-15", total: 24, present: 22, absent: 2 },
-                        { date: "2025-01-14", total: 24, present: 24, absent: 0 },
-                        { date: "2025-01-13", total: 24, present: 21, absent: 3 },
-                        { date: "2025-01-12", total: 24, present: 23, absent: 1 },
-                      ].map((record) => (
-                        <TableRow key={record.date}>
-                          <TableCell className="font-medium">{record.date}</TableCell>
-                          <TableCell>{record.total}명</TableCell>
-                          <TableCell className="text-green-600">{record.present}명</TableCell>
-                          <TableCell className="text-red-600">{record.absent}명</TableCell>
-                          <TableCell>
-                            <Badge variant={record.present / record.total >= 0.9 ? "default" : "secondary"}>
-                              {Math.round((record.present / record.total) * 100)}%
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
             </TabsContent>
 
-            {/* 스크럼 대표자 탭 */}
+            {/* 스크럼 */}
             <TabsContent value="scrum" className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>스크럼 대표자 뽑기</CardTitle>
-                  <CardDescription>랜덤으로 스크럼 발표자를 선정합니다</CardDescription>
+                  <CardDescription>랜덤으로 스크럼 발표자를 선정합니다 (발표 횟수 최소인 사람 중 선정)</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex flex-col items-center justify-center gap-6 py-8">
                     {selectedPresenter ? (
                       <div className="text-center">
                         <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-primary text-4xl font-bold text-primary-foreground">
-                          {selectedPresenter.charAt(0)}
+                          {(selectedPresenter.realName || selectedPresenter.nickname || "?").charAt(0)}
                         </div>
-                        <p className="text-2xl font-bold text-foreground">{selectedPresenter}</p>
+                        <p className="text-2xl font-bold text-foreground">{selectedPresenter.realName || selectedPresenter.nickname}</p>
                         <p className="text-muted-foreground">오늘의 스크럼 발표자입니다!</p>
                       </div>
                     ) : (
@@ -270,32 +366,35 @@ export default function AdminPage() {
                         <p>버튼을 눌러 발표자를 선정하세요</p>
                       </div>
                     )}
-                    <Button size="lg" onClick={handleRandomPresenter}>
-                      <Shuffle className="mr-2 h-5 w-5" />
+                    <Button size="lg" onClick={handlePickPresenter} disabled={presenterLoading}>
+                      {presenterLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Shuffle className="mr-2 h-5 w-5" />}
                       랜덤 선정
                     </Button>
                   </div>
 
-                  {/* 전체 멤버 목록 */}
                   <div className="border-t border-border pt-6">
                     <h4 className="mb-4 font-semibold">전체 멤버</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {mockMembers.map((member) => (
-                        <Badge
-                          key={member.id}
-                          variant={selectedPresenter === member.name ? "default" : "outline"}
-                          className="px-3 py-1"
-                        >
-                          {member.name}
-                        </Badge>
-                      ))}
-                    </div>
+                    {membersLoading ? (
+                      <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {members.map((m) => (
+                          <Badge
+                            key={m.email}
+                            variant={selectedPresenter?.email === m.email ? "default" : "outline"}
+                            className="px-3 py-1"
+                          >
+                            {m.realName || m.nickname}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* 인원 관리 탭 - 상태 컬럼 제거 */}
+            {/* 인원 관리 */}
             <TabsContent value="members" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -305,73 +404,85 @@ export default function AdminPage() {
                       <CardDescription>분반 멤버를 관리합니다</CardDescription>
                     </div>
                     <Badge variant="outline" className="gap-1">
-                      <Users className="h-3 w-3" />총 {mockMembers.length}명
+                      <Users className="h-3 w-3" />총 {members.length}명
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>이름</TableHead>
-                        <TableHead>이메일</TableHead>
-                        <TableHead>출석률</TableHead>
-                        <TableHead className="text-right">관리</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockMembers.map((member) => (
-                        <TableRow key={member.id}>
-                          <TableCell className="font-medium">{member.name}</TableCell>
-                          <TableCell>{member.email}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 w-16 rounded-full bg-muted">
-                                <div
-                                  className="h-2 rounded-full bg-primary"
-                                  style={{ width: `${member.attendance}%` }}
-                                />
-                              </div>
-                              <span className="text-sm">{member.attendance}%</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>멤버 강제 탈퇴</DialogTitle>
-                                  <DialogDescription>
-                                    정말 {member.name}님을 분반에서 탈퇴시키겠습니까? 이 작업은 되돌릴 수 없습니다.
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <DialogFooter>
-                                  <Button variant="outline">취소</Button>
-                                  <Button variant="destructive">탈퇴시키기</Button>
-                                </DialogFooter>
-                              </DialogContent>
-                            </Dialog>
-                          </TableCell>
+                  {membersLoading ? (
+                    <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>이름</TableHead>
+                          <TableHead>이메일</TableHead>
+                          <TableHead>출석률</TableHead>
+                          <TableHead className="text-right">관리</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {members.map((m) => (
+                          <TableRow key={m.email}>
+                            <TableCell className="font-medium">{m.realName}</TableCell>
+                            <TableCell>{m.email}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-16 rounded-full bg-muted">
+                                  <div className="h-2 rounded-full bg-primary" style={{ width: `${Math.min(100, m.attendanceRate)}%` }} />
+                                </div>
+                                <span className="text-sm">{Math.round(m.attendanceRate)}%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {m.memberId != null ? (
+                                <Dialog open={!!kickTarget && kickTarget.memberId === m.memberId} onOpenChange={(open) => !open && setKickTarget(null)}>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:text-destructive"
+                                      onClick={() => setKickTarget({ memberId: m.memberId!, realName: m.realName || m.nickname })}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>멤버 강제 탈퇴</DialogTitle>
+                                      <DialogDescription>
+                                        정말 {kickTarget?.realName}님을 분반에서 탈퇴시키겠습니까? 이 작업은 되돌릴 수 없습니다.
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <DialogFooter>
+                                      <Button variant="outline" onClick={() => setKickTarget(null)}>취소</Button>
+                                      <Button variant="destructive" onClick={handleKick} disabled={kickLoading}>
+                                        {kickLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "탈퇴시키기"}
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* 일정 등록 탭 */}
+            {/* 일정 등록 */}
             <TabsContent value="schedule" className="space-y-6">
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle>오늘의 일정 등록</CardTitle>
-                      <CardDescription>분반 일정을 등록하고 관리합니다</CardDescription>
+                      <CardDescription>분반 일정을 등록합니다</CardDescription>
                     </div>
                     <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
                       <DialogTrigger asChild>
@@ -387,43 +498,57 @@ export default function AdminPage() {
                         </DialogHeader>
                         <div className="space-y-4 py-4">
                           <div className="space-y-2">
-                            <Label>일정 제목</Label>
-                            <Input placeholder="예: 오전 스크럼" />
+                            <Label>일정 제목 *</Label>
+                            <Input
+                              placeholder="예: 오전 스크럼"
+                              value={scheduleForm.title}
+                              onChange={(e) => setScheduleForm((f) => ({ ...f, title: e.target.value }))}
+                            />
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label>시작 시간</Label>
-                              <Input type="time" defaultValue="09:00" />
+                              <Label>날짜 *</Label>
+                              <Input
+                                type="date"
+                                value={scheduleForm.date}
+                                onChange={(e) => setScheduleForm((f) => ({ ...f, date: e.target.value }))}
+                              />
                             </div>
                             <div className="space-y-2">
-                              <Label>종료 시간</Label>
-                              <Input type="time" defaultValue="10:00" />
+                              <Label>시작 시간 *</Label>
+                              <Input
+                                type="time"
+                                value={scheduleForm.time}
+                                onChange={(e) => setScheduleForm((f) => ({ ...f, time: e.target.value }))}
+                              />
                             </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>일정 유형</Label>
-                            <Select>
-                              <SelectTrigger>
-                                <SelectValue placeholder="유형 선택" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="scrum">스크럼</SelectItem>
-                                <SelectItem value="lecture">강의</SelectItem>
-                                <SelectItem value="work">작업</SelectItem>
-                                <SelectItem value="etc">기타</SelectItem>
-                              </SelectContent>
-                            </Select>
                           </div>
                           <div className="space-y-2">
                             <Label>설명 (선택)</Label>
-                            <Textarea placeholder="일정에 대한 추가 설명" />
+                            <Textarea
+                              placeholder="일정에 대한 추가 설명"
+                              value={scheduleForm.content}
+                              onChange={(e) => setScheduleForm((f) => ({ ...f, content: e.target.value }))}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="important"
+                              checked={scheduleForm.important}
+                              onChange={(e) => setScheduleForm((f) => ({ ...f, important: e.target.checked }))}
+                            />
+                            <Label htmlFor="important">중요 일정</Label>
                           </div>
                         </div>
                         <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsScheduleOpen(false)}>
-                            취소
+                          <Button variant="outline" onClick={() => setIsScheduleOpen(false)}>취소</Button>
+                          <Button
+                            onClick={handleAddSchedule}
+                            disabled={scheduleLoading || !scheduleForm.title.trim() || !scheduleForm.date || !scheduleForm.time}
+                          >
+                            {scheduleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "등록하기"}
                           </Button>
-                          <Button onClick={() => setIsScheduleOpen(false)}>등록하기</Button>
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
@@ -431,36 +556,24 @@ export default function AdminPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {[
-                      { id: 1, title: "오전 스크럼", time: "09:00 - 10:00", type: "스크럼" },
-                      { id: 2, title: "앱 개발 강의", time: "10:00 - 12:00", type: "강의" },
-                      { id: 3, title: "점심시간", time: "12:00 - 13:00", type: "기타" },
-                      { id: 4, title: "팀 프로젝트", time: "13:00 - 18:00", type: "작업" },
-                    ].map((schedule) => (
-                      <div
-                        key={schedule.id}
-                        className="flex items-center justify-between rounded-lg border border-border p-4"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                            <Clock className="h-5 w-5 text-primary" />
+                    {localSchedules.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4">등록된 일정이 없습니다. 일정 추가 후 이번 세션에서 등록한 항목이 아래에 표시됩니다. (목록 조회 API는 별도로 제공되지 않습니다.)</p>
+                    ) : (
+                      localSchedules.map((s) => (
+                        <div key={s.id} className="flex items-center justify-between rounded-lg border border-border p-4">
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                              <Clock className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{s.title}</p>
+                              <p className="text-sm text-muted-foreground">{s.time}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-foreground">{schedule.title}</p>
-                            <p className="text-sm text-muted-foreground">{schedule.time}</p>
-                          </div>
+                          <Badge variant="outline">{s.type}</Badge>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{schedule.type}</Badge>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>

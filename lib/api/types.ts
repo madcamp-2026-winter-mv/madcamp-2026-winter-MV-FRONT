@@ -110,6 +110,7 @@ export interface PostResponseDto {
 }
 
 export interface MemberResponseDto {
+  memberId?: number;
   nickname: string;
   realName: string;
   email: string;
@@ -118,7 +119,7 @@ export interface MemberResponseDto {
   roomId?: number;
   role: string; // 'OWNER' | 'ADMIN' | 'MEMBER'
   presentationCount: number;
-  attendanceCount: number;
+  attendanceCount?: number;
   attendanceRate: number;
   writtenPostsCount: number;
   commentedPostsCount: number;
