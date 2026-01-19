@@ -5,81 +5,115 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { createCommunity } from "@/lib/api" 
+import { Textarea } from "@/components/ui/textarea"
+import { Check, X } from "lucide-react"
 
 interface CreateCommunityModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess?: () => void 
 }
 
-export function CreateCommunityModal({ open, onOpenChange, onSuccess }: CreateCommunityModalProps) {
-  const [name, setName] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+export function CreateCommunityModal({ open, onOpenChange }: CreateCommunityModalProps) {
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+  })
+  const [isDuplicateChecked, setIsDuplicateChecked] = useState(false)
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null)
 
-  const handleSubmit = async () => {
-    if (!name.trim()) return
+  const handleDuplicateCheck = () => {
+    // Mock: 중복 확인 로직 (실제로는 서버에 요청)
+    const unavailableNames = ["테스트", "몰입캠프", "자유게시판"]
+    const available = !unavailableNames.includes(formData.title)
+    setIsAvailable(available)
+    setIsDuplicateChecked(true)
+  }
 
-    setIsLoading(true)
-    try {
-      await createCommunity(name)
-      
-      alert("커뮤니티가 생성되었습니다!")
-      setName("") // 입력창 초기화
-      onOpenChange(false) // 모달 닫기
-      
-      // 목록 새로고침
-      if (onSuccess) {
-        onSuccess()
-      } else {
-        window.location.reload() // 콜백 없으면 페이지 새로고침
-      }
-    } catch (error) {
-      console.error(error)
-      alert("커뮤니티 생성에 실패했습니다.")
-    } finally {
-      setIsLoading(false)
-    }
+  const handleTitleChange = (value: string) => {
+    setFormData({ ...formData, title: value })
+    setIsDuplicateChecked(false)
+    setIsAvailable(null)
+  }
+
+  const handleSubmit = () => {
+    console.log("커뮤니티 생성:", formData)
+    onOpenChange(false)
+    setFormData({ title: "", description: "" })
+    setIsDuplicateChecked(false)
+    setIsAvailable(null)
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] bg-card border-border">
+      <DialogContent className="sm:max-w-[500px] bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-foreground">새 커뮤니티 만들기</DialogTitle>
+          <DialogTitle className="text-foreground">새 커뮤니티 생성</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-foreground">
+            <Label htmlFor="title" className="text-foreground">
               커뮤니티 이름
             </Label>
-            <Input
-              id="name"
-              placeholder="예: 운동, 맛집탐방, 코딩질문"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="bg-background border-border"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSubmit()
-              }}
+            <div className="flex gap-2">
+              <Input
+                id="title"
+                placeholder="커뮤니티 이름을 입력하세요"
+                value={formData.title}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                className="bg-background border-border flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleDuplicateCheck}
+                disabled={!formData.title}
+                className="bg-transparent shrink-0"
+              >
+                중복확인
+              </Button>
+            </div>
+            {isDuplicateChecked && (
+              <div className={`flex items-center gap-1 text-sm ${isAvailable ? "text-green-600" : "text-destructive"}`}>
+                {isAvailable ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    사용 가능한 이름입니다.
+                  </>
+                ) : (
+                  <>
+                    <X className="h-4 w-4" />
+                    이미 사용 중인 이름입니다.
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-foreground">
+              설명
+            </Label>
+            <Textarea
+              id="description"
+              placeholder="커뮤니티에 대한 설명을 입력하세요"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="bg-background border-border min-h-[100px]"
             />
-            <p className="text-xs text-muted-foreground">
-              생성된 커뮤니티는 상단 탭에 즉시 추가됩니다.
-            </p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="bg-transparent">
             취소
           </Button>
           <Button
             onClick={handleSubmit}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
-            disabled={!name.trim() || isLoading}
+            disabled={!formData.title || !isDuplicateChecked || !isAvailable}
           >
-            {isLoading ? "생성 중..." : "생성하기"}
+            생성하기
           </Button>
         </DialogFooter>
       </DialogContent>

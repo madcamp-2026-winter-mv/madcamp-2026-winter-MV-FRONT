@@ -46,11 +46,9 @@ export default function LoginPage() {
           </div>
 
           <div className="hidden lg:block">
-    <h2 className="text-2xl font-bold text-foreground">로그인</h2>
-    <p className="text-muted-foreground mt-1">
-     Google 계정으로 로그인하세요</p>
-</div>
-
+            <h2 className="text-2xl font-bold text-foreground">로그인</h2>
+            <p className="text-muted-foreground mt-1">분반 코드로 입장하세요</p>
+          </div>
 
           <LoginForm />
         </div>
