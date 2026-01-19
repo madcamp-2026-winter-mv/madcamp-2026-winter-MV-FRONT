@@ -142,7 +142,7 @@ export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
 
             {member.roomName && (
               <Badge variant="outline" className="mt-3 border-primary/50 text-primary">
-                {member.roomName} 분반
+                {member.roomName}
               </Badge>
             )}
 
