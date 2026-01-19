@@ -294,6 +294,12 @@ export const memberApi = {
     });
   },
 
+  checkNickname: (nickname: string): Promise<boolean> => {
+    return apiRequest<boolean>(`/api/members/check/nickname?nickname=${encodeURIComponent(nickname)}`, {
+      method: 'GET',
+    });
+  },
+
   // Toggle alarm
   toggleAlarm: (allowAlarm: boolean): Promise<boolean> => {
     return apiRequest<boolean>('/api/members/me/alarm', {

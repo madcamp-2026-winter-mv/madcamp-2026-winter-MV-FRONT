@@ -18,7 +18,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { memberApi } from "@/lib/api/api"
-import { useAuth } from "@/hooks/use-auth"
 import type { MemberResponseDto } from "@/lib/api/types"
 
 interface ProfileCardProps {
@@ -27,9 +26,6 @@ interface ProfileCardProps {
 }
 
 export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
-  const { user: authUser } = useAuth()
-  console.log("로그인 유저 데이터:", authUser);
-  console.log("백엔드 멤버 데이터:", member);
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [nickname, setNickname] = useState(member?.nickname ?? "")
@@ -55,12 +51,20 @@ export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
     setIsNicknameAvailable(null)
   }
 
-  const handleDuplicateCheck = () => {
-    // TODO: 닉네임 중복 확인 API 연동 (예: memberApi.checkNicknameDuplicate(nickname))
-    const unavailableNames = ["테스트", "관리자", "익명"]
-    const available = !unavailableNames.includes(nickname)
-    setIsNicknameAvailable(available)
-    setIsDuplicateChecked(true)
+  const handleDuplicateCheck = async () => {
+    if (!nickname.trim()) return;
+
+    try {
+      setError(null);
+      // API 호출: 사용 가능하면 true, 이미 있으면 false 반환한다고 가정
+      const isAvailable = await memberApi.checkNickname(nickname);
+      
+      setIsNicknameAvailable(isAvailable);
+      setIsDuplicateChecked(true);
+    } catch (e: any) {
+      setError("중복 확인 중 오류가 발생했습니다.");
+      console.error(e);
+    }
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,17 +162,15 @@ export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>닉네임 수정</DialogTitle>
-            <DialogDescription>닉네임을 수정할 수 있습니다</DialogDescription>
+            <DialogTitle>프로필 수정</DialogTitle>
+            <DialogDescription>프로필 사진과 닉네임을 수정할 수 있습니다</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             {/* 프로필 사진 */}
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <Avatar className="h-32 w-32 border-4 border-primary">
-                console.log("로그인 유저 데이터2:", authUser);
-                console.log("백엔드 멤버 데이터2:", member);
-                  <AvatarImage src={previewImage || authUser?.profileImage || "/placeholder.svg"} alt={nickname} />
+                  <AvatarImage src={previewImage || "/placeholder.svg"} alt={nickname} />
                   <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
                     {nickname.slice(-2) || "?"}
                   </AvatarFallback>
@@ -183,6 +185,23 @@ export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
                     <X className="h-4 w-4" />
                   </Button>
                 )}
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <Label
+                  htmlFor="image-upload"
+                  className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-4 py-2 hover:bg-muted"
+                >
+                  <Upload className="h-4 w-4" />
+                  이미지 선택
+                </Label>
+                <Input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+                <p className="text-xs text-muted-foreground">JPG, PNG, GIF (최대 5MB)</p>
               </div>
             </div>
 
