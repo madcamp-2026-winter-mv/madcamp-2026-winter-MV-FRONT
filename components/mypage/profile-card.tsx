@@ -56,10 +56,11 @@ export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
 
     try {
       setError(null);
-      // API 호출: 사용 가능하면 true, 이미 있으면 false 반환한다고 가정
-      const isAvailable = await memberApi.checkNickname(nickname);
+      // 서버 응답: 중복이 존재하면 true, 없으면 false
+      const isDuplicated = await memberApi.checkNickname(nickname);
       
-      setIsNicknameAvailable(isAvailable);
+      // 사용 가능 여부(Available)는 중복의 반대여야 함 (!)
+      setIsNicknameAvailable(!isDuplicated); 
       setIsDuplicateChecked(true);
     } catch (e: any) {
       setError("중복 확인 중 오류가 발생했습니다.");
