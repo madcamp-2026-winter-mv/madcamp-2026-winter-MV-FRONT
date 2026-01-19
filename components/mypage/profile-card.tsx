@@ -28,7 +28,8 @@ interface ProfileCardProps {
 
 export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
   const { user: authUser } = useAuth()
-  //console.log("검사할 구글 유저 객체:", authUser)
+  console.log("로그인 유저 데이터:", authUser);
+  console.log("백엔드 멤버 데이터:", member);
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [nickname, setNickname] = useState(member?.nickname ?? "")
@@ -165,6 +166,8 @@ export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <Avatar className="h-32 w-32 border-4 border-primary">
+                console.log("로그인 유저 데이터2:", authUser);
+                console.log("백엔드 멤버 데이터2:", member);
                   <AvatarImage src={previewImage || authUser?.profileImage || "/placeholder.svg"} alt={nickname} />
                   <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
                     {nickname.slice(-2) || "?"}
