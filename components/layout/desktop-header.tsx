@@ -11,11 +11,10 @@ import { useAuth } from "@/hooks/use-auth"
 import type { MemberResponseDto } from "@/lib/api/types"
 
 interface DesktopHeaderProps {
-  member: MemberResponseDto
   title: string
 }
 
-export function DesktopHeader({ member, title }: DesktopHeaderProps) {
+export function DesktopHeader({ title }: DesktopHeaderProps) {
   const { user, logout } = useAuth()
 
   const handleLogout = async () => {
@@ -50,7 +49,7 @@ export function DesktopHeader({ member, title }: DesktopHeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2 px-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={member.profileImage} alt={member.nickname} />
+                <AvatarImage src={user?.profileImage} alt={user?.nickname} />
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   {userInitial}
                 </AvatarFallback>
