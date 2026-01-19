@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/hooks/use-auth"
+import type { MemberResponseDto } from "@/lib/api/types"
 
 interface DesktopHeaderProps {
+  member: MemberResponseDto
   title: string
 }
 
-export function DesktopHeader({ title }: DesktopHeaderProps) {
+export function DesktopHeader({ member, title }: DesktopHeaderProps) {
   const { user, logout } = useAuth()
 
   const handleLogout = async () => {
@@ -48,6 +50,7 @@ export function DesktopHeader({ title }: DesktopHeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2 px-2">
               <Avatar className="h-8 w-8">
+                <AvatarImage src={member.profileImage} alt={member.nickname} />
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   {userInitial}
                 </AvatarFallback>
