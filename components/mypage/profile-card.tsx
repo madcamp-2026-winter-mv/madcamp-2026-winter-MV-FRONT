@@ -121,6 +121,7 @@ export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
           <div className="flex flex-col items-center text-center">
             <div className="relative">
               <Avatar className="h-24 w-24 border-4 border-primary">
+                <AvatarImage src={member.profileImage || "/placeholder.svg"} alt={member.nickname} />
                 <AvatarFallback className="bg-primary/20 text-primary text-xl font-bold">
                   {String(member.nickname).slice(-2)}
                 </AvatarFallback>
@@ -163,49 +164,10 @@ export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>프로필 수정</DialogTitle>
-            <DialogDescription>프로필 사진과 닉네임을 수정할 수 있습니다</DialogDescription>
+            <DialogTitle>닉네임 수정</DialogTitle>
+            <DialogDescription>닉네임을 수정할 수 있습니다</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
-            {/* 프로필 사진 */}
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative">
-                <Avatar className="h-32 w-32 border-4 border-primary">
-                  <AvatarImage src={previewImage || "/placeholder.svg"} alt={nickname} />
-                  <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
-                    {nickname.slice(-2) || "?"}
-                  </AvatarFallback>
-                </Avatar>
-                {previewImage && (
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    className="absolute -right-2 -top-2 h-8 w-8 rounded-full"
-                    onClick={() => setPreviewImage(null)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Label
-                  htmlFor="image-upload"
-                  className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-4 py-2 hover:bg-muted"
-                >
-                  <Upload className="h-4 w-4" />
-                  이미지 선택
-                </Label>
-                <Input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageChange}
-                />
-                <p className="text-xs text-muted-foreground">JPG, PNG, GIF (최대 5MB)</p>
-              </div>
-            </div>
-
             {/* 닉네임 수정 */}
             <div className="space-y-2">
               <Label htmlFor="nickname">닉네임</Label>

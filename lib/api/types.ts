@@ -113,6 +113,7 @@ export interface MemberResponseDto {
   nickname: string;
   realName: string;
   email: string;
+  profileImage?: string;
   roomName?: string;
   roomId?: number;
   role: string; // 'OWNER' | 'ADMIN' | 'MEMBER'
@@ -123,7 +124,6 @@ export interface MemberResponseDto {
   commentedPostsCount: number;
   ongoingPartyCount: number;
   allowAlarm: boolean;
-  profileImage?: string;
 }
 
 export interface CategoryDto {
