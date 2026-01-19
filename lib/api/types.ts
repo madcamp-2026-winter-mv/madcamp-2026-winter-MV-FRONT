@@ -123,6 +123,7 @@ export interface MemberResponseDto {
   commentedPostsCount: number;
   ongoingPartyCount: number;
   allowAlarm: boolean;
+  profileImage?: string;
 }
 
 export interface CategoryDto {

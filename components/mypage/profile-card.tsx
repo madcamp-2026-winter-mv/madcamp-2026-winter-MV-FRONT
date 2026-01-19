@@ -157,8 +157,8 @@ export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>프로필 수정</DialogTitle>
-            <DialogDescription>프로필 사진과 닉네임을 수정할 수 있습니다</DialogDescription>
+            <DialogTitle>닉네임 수정</DialogTitle>
+            <DialogDescription>닉네임을 수정할 수 있습니다</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             {/* 프로필 사진 */}
@@ -180,23 +180,6 @@ export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
                     <X className="h-4 w-4" />
                   </Button>
                 )}
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Label
-                  htmlFor="image-upload"
-                  className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-4 py-2 hover:bg-muted"
-                >
-                  <Upload className="h-4 w-4" />
-                  이미지 선택
-                </Label>
-                <Input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageChange}
-                />
-                <p className="text-xs text-muted-foreground">JPG, PNG, GIF (최대 5MB)</p>
               </div>
             </div>
 
