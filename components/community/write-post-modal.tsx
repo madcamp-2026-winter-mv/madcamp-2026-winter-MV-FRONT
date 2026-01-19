@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -17,37 +17,84 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
 import { Users, Plus, Trash2, BarChart3 } from "lucide-react"
+import { postApi, memberApi, categoryApi } from "@/lib/api/api"
+import { PostType } from "@/lib/api/types"
+import type { CategoryDto } from "@/lib/api/types"
 
 interface WritePostModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  category: string  // 현재 선택된 카테고리 (자유, 질문, 정보공유, 채용공고, 팟모집)
-  isPartyOnly?: boolean  // 팟모집 탭에서 열렸는지
+  category: string
+  isPartyOnly?: boolean
+  onSuccess?: () => void
 }
 
-export function WritePostModal({ open, onOpenChange, category: initialCategory, isPartyOnly = false }: WritePostModalProps) {
-  // 팟모집 탭이면 팟 모집만, 아니면 일반 글만
+export function WritePostModal({ open, onOpenChange, category: initialCategory, isPartyOnly = false, onSuccess }: WritePostModalProps) {
   const isPartyPost = isPartyOnly
 
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
-  // 작성자 유형 (익명/닉네임)
   const [authorType, setAuthorType] = useState<"nickname" | "anonymous">("nickname")
-
-  // 팟 모집 전용
   const [maxParticipants, setMaxParticipants] = useState(4)
-
   const [hasVote, setHasVote] = useState(false)
   const [voteTitle, setVoteTitle] = useState("")
   const [voteOptions, setVoteOptions] = useState(["", ""])
   const [allowMultipleVotes, setAllowMultipleVotes] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [roomId, setRoomId] = useState<number | null>(null)
+  const [categories, setCategories] = useState<CategoryDto[]>([])
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    setSubmitError(null)
+    memberApi.getMyInfo().then((m) => setRoomId(m.roomId ?? null)).catch(() => setRoomId(null))
+    categoryApi.getAllCategories().then((list) => setCategories(Array.isArray(list) ? list : [])).catch(() => setCategories([]))
+  }, [open])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // 글 작성 완료 후 모달 닫기
-    onOpenChange(false)
-    // 폼 초기화
-    resetForm()
+    setSubmitError(null)
+    setSubmitting(true)
+
+    const rId = roomId
+    const catName = isPartyPost ? "팟모집" : initialCategory
+    const cat = categories.find((c) => c.name === catName)
+
+    if (!rId) {
+      setSubmitError("방에 참여한 후에 글을 작성할 수 있습니다.")
+      setSubmitting(false)
+      return
+    }
+    if (!cat) {
+      setSubmitError("선택한 카테고리를 찾을 수 없습니다. 잠시 후 다시 시도해주세요.")
+      setSubmitting(false)
+      return
+    }
+
+    const type = isPartyPost ? PostType.PARTY : (hasVote ? PostType.VOTE : PostType.NORMAL)
+    const payload = {
+      roomId: rId,
+      categoryId: cat.categoryId,
+      title: title.trim(),
+      content: content.trim(),
+      type,
+      maxParticipants: isPartyPost ? maxParticipants : undefined,
+      voteContents: hasVote ? voteOptions.filter(Boolean) : undefined,
+    }
+
+    try {
+      await postApi.createPost(payload)
+      onOpenChange(false)
+      resetForm()
+      onSuccess?.()
+    } catch (err: unknown) {
+      const e = err as { message?: string; error?: string }
+      setSubmitError(e?.message || e?.error || "글 작성에 실패했습니다.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const resetForm = () => {
@@ -92,6 +139,9 @@ export function WritePostModal({ open, onOpenChange, category: initialCategory, 
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {submitError && (
+            <div className="rounded-lg bg-destructive/10 text-destructive text-sm p-3">{submitError}</div>
+          )}
           {/* 현재 카테고리 표시 */}
           <div className="flex items-center gap-2">
             <Label className="text-sm font-semibold">게시판</Label>
@@ -249,10 +299,10 @@ export function WritePostModal({ open, onOpenChange, category: initialCategory, 
 
           {/* 버튼 */}
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" className="bg-transparent" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" className="bg-transparent" onClick={() => onOpenChange(false)} disabled={submitting}>
               취소
             </Button>
-            <Button type="submit">{isPartyPost ? "팟 모집 시작" : "게시하기"}</Button>
+            <Button type="submit" disabled={submitting}>{submitting ? "등록 중..." : (isPartyPost ? "팟 모집 시작" : "게시하기")}</Button>
           </div>
         </form>
       </DialogContent>

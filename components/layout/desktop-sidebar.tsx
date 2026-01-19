@@ -2,14 +2,16 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Home, MessageSquare, User, Settings, LogOut, Bell, Shield, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { useAuth } from "@/hooks/use-auth"
 
 const navItems = [
-  { href: "/", icon: Home, label: "대시보드" },
+  { href: "/dashboard", icon: Home, label: "대시보드" },
   { href: "/community", icon: MessageSquare, label: "커뮤니티" },
   { href: "/chat", icon: MessageCircle, label: "채팅방" },
   { href: "/mypage", icon: User, label: "마이페이지" },
@@ -18,6 +20,12 @@ const navItems = [
 
 export function DesktopSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { logout } = useAuth()
+
+  const handleLogout = async () => {
+    await logout()
+  }
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-sidebar text-sidebar-foreground">
@@ -91,15 +99,14 @@ export function DesktopSidebar() {
               설정
             </Button>
           </Link>
-          <Link href="/login">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-destructive/20 hover:text-destructive"
-            >
-              <LogOut className="h-5 w-5" />
-              로그아웃
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-destructive/20 hover:text-destructive"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-5 w-5" />
+            로그아웃
+          </Button>
         </div>
       </div>
     </aside>

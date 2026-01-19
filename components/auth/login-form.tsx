@@ -2,21 +2,24 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
+import { API_BASE_URL } from "@/lib/api/types"
 
 export function LoginForm() {
+  // Google OAuth2 로그인
+  const handleGoogleLogin = () => {
+    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`
+  }
+
   return (
     <Card className="border-border/50">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-center text-lg">분반에 입장하기</CardTitle>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-center text-lg">구글 로그인</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Google 로그인 */}
         <Button
           variant="outline"
           className="w-full h-12 gap-3 font-medium hover:bg-primary/10 hover:border-primary bg-transparent"
+          onClick={handleGoogleLogin}
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path
@@ -38,33 +41,9 @@ export function LoginForm() {
           </svg>
           Google로 계속하기
         </Button>
-
-        <div className="relative">
-          <Separator />
-          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-            또는
-          </span>
-        </div>
-
-        {/* 분반 코드 입력 */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="roomCode" className="text-sm">
-              분반 코드
-            </Label>
-            <Input
-              id="roomCode"
-              placeholder="예: MAD012"
-              className="h-12 text-center text-lg font-mono tracking-widest uppercase"
-              maxLength={6}
-            />
-            <p className="text-xs text-muted-foreground text-center">운영진에게 받은 6자리 코드를 입력하세요</p>
-          </div>
-
-          <Button className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
-            입장하기
-          </Button>
-        </div>
+        <p className="text-sm text-muted-foreground text-center">
+          Google 계정으로 로그인하면 몰 봐를 이용할 수 있습니다.
+        </p>
       </CardContent>
     </Card>
   )

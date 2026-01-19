@@ -1,6 +1,56 @@
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { LoginForm } from "@/components/auth/login-form"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function LoginPage() {
+  const router = useRouter()
+  const { isAuthenticated, isLoading, refetch } = useAuth()
+
+  // 이미 로그인된 경우 대시보드로 리다이렉트
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push("/dashboard")
+    }
+  }, [isAuthenticated, isLoading, router])
+
+  // 페이지 로드 시 사용자 정보 확인 (OAuth2 콜백 후 자동 로그인 확인)
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      // 주기적으로 사용자 정보 확인 (OAuth2 로그인 후 세션 생성 대기)
+      const checkAuth = async () => {
+        try {
+          await refetch()
+        } catch (error) {
+          // 로그인되지 않은 상태
+        }
+      }
+      
+      // 초기 확인
+      checkAuth()
+      
+      // 1초 후 다시 확인 (OAuth2 콜백 대기)
+      const timer = setTimeout(() => {
+        checkAuth()
+      }, 1000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [isLoading, isAuthenticated, refetch])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">로딩 중...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* 왼쪽: 브랜딩 영역 */}
@@ -47,7 +97,7 @@ export default function LoginPage() {
 
           <div className="hidden lg:block">
             <h2 className="text-2xl font-bold text-foreground">로그인</h2>
-            <p className="text-muted-foreground mt-1">분반 코드로 입장하세요</p>
+            <p className="text-muted-foreground mt-1">Google 계정으로 로그인하세요</p>
           </div>
 
           <LoginForm />

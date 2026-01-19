@@ -1,0 +1,69 @@
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
+import { DesktopHeader } from "@/components/layout/desktop-header"
+import { AttendanceWidget } from "@/components/dashboard/attendance-widget"
+import { TodaySchedule } from "@/components/dashboard/today-schedule"
+import { TodayPresenter } from "@/components/dashboard/today-presenter"
+import { HotPosts } from "@/components/dashboard/hot-posts"
+import { QuickLinks } from "@/components/dashboard/quick-links"
+import { useAuth } from "@/hooks/use-auth"
+
+export default function DashboardPage() {
+  const router = useRouter()
+  const { isAuthenticated, isLoading } = useAuth()
+
+  // 인증되지 않은 경우 로그인 페이지로 리다이렉트
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push("/")
+    }
+  }, [isAuthenticated, isLoading, router])
+
+  // 로딩 중이거나 인증되지 않은 경우 로딩 화면 표시
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">로딩 중...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <DesktopSidebar />
+
+      <div className="ml-64">
+        <DesktopHeader title="대시보드" />
+
+        <main className="p-6">
+          {/* 상단 영역: 출석 + 일정 */}
+          <div className="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <div className="xl:col-span-2">
+              <AttendanceWidget />
+            </div>
+            <div>
+              <TodaySchedule />
+            </div>
+          </div>
+
+          {/* 중간 영역: 발표자 + HOT 게시글 */}
+          <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <TodayPresenter />
+            <HotPosts />
+          </div>
+
+          {/* 하단 영역: 빠른 링크 */}
+          <div className="grid grid-cols-1 gap-6">
+            <QuickLinks />
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}

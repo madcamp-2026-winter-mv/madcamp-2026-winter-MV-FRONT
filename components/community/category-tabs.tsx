@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,14 +10,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { categoryApi } from "@/lib/api/api"
+import type { CategoryDto } from "@/lib/api/types"
 
-const categories = [
-  { id: "all", label: "전체" },
-  { id: "free", label: "자유" },
-  { id: "question", label: "질문" },
-  { id: "party", label: "팟모집" },
-  { id: "info", label: "정보공유" },
-  { id: "job", label: "채용공고" },
+const FALLBACK_CATEGORIES = [
+  { categoryId: 0, name: "자유", icon: "" },
+  { categoryId: 0, name: "질문", icon: "" },
+  { categoryId: 0, name: "팟모집", icon: "" },
+  { categoryId: 0, name: "정보공유", icon: "" },
+  { categoryId: 0, name: "채용공고", icon: "" },
 ]
 
 interface CategoryTabsProps {
@@ -28,6 +29,14 @@ interface CategoryTabsProps {
 export function CategoryTabs({ onCategoryChange, visibleCategories }: CategoryTabsProps) {
   const [activeCategory, setActiveCategory] = useState("all")
   const [activeCategoryLabel, setActiveCategoryLabel] = useState("전체")
+  const [categories, setCategories] = useState<CategoryDto[]>([])
+
+  useEffect(() => {
+    categoryApi
+      .getAllCategories()
+      .then((list) => setCategories(Array.isArray(list) && list.length > 0 ? list : FALLBACK_CATEGORIES))
+      .catch(() => setCategories(FALLBACK_CATEGORIES))
+  }, [])
 
   const handleCategoryClick = (categoryId: string, categoryLabel: string) => {
     setActiveCategory(categoryId)
@@ -35,24 +44,19 @@ export function CategoryTabs({ onCategoryChange, visibleCategories }: CategoryTa
     onCategoryChange?.(categoryLabel)
   }
 
-  // 전체 탭은 항상 표시, 나머지는 visibleCategories에 따라 표시
-  const visibleTabs = categories.filter((category) => {
-    if (category.id === "all") return true
+  const displayList = categories.length > 0 ? categories : FALLBACK_CATEGORIES
+  const visibleTabs = displayList.filter((c) => {
+    if (c.name === "전체") return true
     if (!visibleCategories) return true
-    return visibleCategories[category.label] !== false
+    return visibleCategories[c.name] !== false
   })
-
-  // 드롭다운에 표시할 카테고리 (전체 제외)
-  const dropdownCategories = visibleTabs.filter((category) => category.id !== "all")
 
   return (
     <div className="flex items-center gap-2">
-      {/* 현재 선택된 카테고리 표시 */}
       <div className="rounded-lg border bg-card px-4 py-2">
         <span className="text-sm font-medium">{activeCategoryLabel}</span>
       </div>
 
-      {/* 드롭다운 버튼 */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="icon" className="h-9 w-9 bg-transparent">
@@ -62,23 +66,20 @@ export function CategoryTabs({ onCategoryChange, visibleCategories }: CategoryTa
         <DropdownMenuContent align="start" className="w-48">
           <DropdownMenuItem
             onClick={() => handleCategoryClick("all", "전체")}
-            className={cn(
-              "cursor-pointer",
-              activeCategory === "all" && "bg-primary/10 text-primary font-medium"
-            )}
+            className={cn("cursor-pointer", activeCategory === "all" && "bg-primary/10 text-primary font-medium")}
           >
             전체
           </DropdownMenuItem>
-          {dropdownCategories.map((category) => (
+          {visibleTabs.map((c) => (
             <DropdownMenuItem
-              key={category.id}
-              onClick={() => handleCategoryClick(category.id, category.label)}
+              key={c.categoryId}
+              onClick={() => handleCategoryClick(String(c.categoryId), c.name)}
               className={cn(
                 "cursor-pointer",
-                activeCategory === category.id && "bg-primary/10 text-primary font-medium"
+                activeCategory === String(c.categoryId) && "bg-primary/10 text-primary font-medium"
               )}
             >
-              {category.label}
+              {c.name}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>

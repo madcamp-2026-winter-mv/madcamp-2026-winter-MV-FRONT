@@ -16,8 +16,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
+# env files (보안: .env.local 등 제외, .env.example 만 허용)
 .env*
+!.env.example
 
 # vercel
 .vercel

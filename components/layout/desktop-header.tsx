@@ -7,12 +7,21 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useAuth } from "@/hooks/use-auth"
 
 interface DesktopHeaderProps {
   title: string
 }
 
 export function DesktopHeader({ title }: DesktopHeaderProps) {
+  const { user, logout } = useAuth()
+
+  const handleLogout = async () => {
+    await logout()
+  }
+
+  const userInitial = user?.nickname?.[0] || user?.realName?.[0] || "?"
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background px-6">
       <h1 className="text-xl font-bold text-foreground">{title}</h1>
@@ -39,9 +48,13 @@ export function DesktopHeader({ title }: DesktopHeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2 px-2">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground">김</AvatarFallback>
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {userInitial}
+                </AvatarFallback>
               </Avatar>
-              <span className="hidden text-sm font-medium lg:inline">김몰입</span>
+              <span className="hidden text-sm font-medium lg:inline">
+                {user?.nickname || user?.realName || "사용자"}
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -51,8 +64,8 @@ export function DesktopHeader({ title }: DesktopHeaderProps) {
             <DropdownMenuItem asChild>
               <Link href="/settings">설정</Link>
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive" asChild>
-              <Link href="/login">로그아웃</Link>
+            <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
+              로그아웃
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

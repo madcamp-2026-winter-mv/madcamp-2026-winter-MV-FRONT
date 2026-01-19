@@ -10,16 +10,30 @@ import { WritePostModal } from "@/components/community/write-post-modal"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, PenSquare } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
+import { toast } from "@/hooks/use-toast"
 
 export default function CommunityPage() {
+  const { user } = useAuth()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState("전체")
+  const [listRefreshKey, setListRefreshKey] = useState(0)
 
-  // 전체 탭에서는 글 작성 불가
   const canWrite = selectedCategory !== "전체"
-  // 팟모집 탭에서만 팟 모집 글 작성 가능
   const isPartyTab = selectedCategory === "팟모집"
+
+  const handleWriteClick = () => {
+    if (user?.roomId == null) {
+      toast({
+        title: "방 참여 필요",
+        description: "방에 참여한 후 글을 쓸 수 있습니다. 대시보드에서 초대 코드로 참여해주세요.",
+        variant: "destructive",
+      })
+      return
+    }
+    setIsWriteModalOpen(true)
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,7 +50,7 @@ export default function CommunityPage() {
                 <CategoryTabs onCategoryChange={setSelectedCategory} />
                 <div className="flex items-center gap-2">
                   {canWrite && (
-                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsWriteModalOpen(true)}>
+                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleWriteClick}>
                       <PenSquare className="h-4 w-4 mr-2" />
                       {isPartyTab ? "팟 모집하기" : "새 글 작성"}
                     </Button>
@@ -48,7 +62,7 @@ export default function CommunityPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <CommunityList selectedCategory={selectedCategory} />
+                <CommunityList selectedCategory={selectedCategory} refreshKey={listRefreshKey} />
               </div>
             </div>
 
@@ -75,6 +89,7 @@ export default function CommunityPage() {
         onOpenChange={setIsWriteModalOpen} 
         category={selectedCategory}
         isPartyOnly={isPartyTab}
+        onSuccess={() => setListRefreshKey((k) => k + 1)}
       />
     </div>
   )
