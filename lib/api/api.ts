@@ -332,6 +332,11 @@ export const categoryApi = {
       body: JSON.stringify({ name }),
     });
   },
+
+  /** GET /api/categories/check?name= — 카테고리명 중복 확인. { available: true } = 사용 가능, { available: false } = 이미 존재 */
+  checkDuplicate: (name: string): Promise<{ available: boolean }> => {
+    return apiRequest<{ available: boolean }>(`/api/categories/check?name=${encodeURIComponent(name)}`);
+  },
 };
 
 // ========== Notification APIs ==========
@@ -365,6 +370,9 @@ export const notificationApi = {
 };
 
 // ========== Chat APIs ==========
+
+/** 채팅 WebSocket URL (SockJS/STOMP). https→wss, http→ws */
+export const getChatWsUrl = () => API_BASE_URL.replace(/^http/, 'ws') + '/ws-stomp';
 
 export const chatApi = {
   // Get my chat rooms

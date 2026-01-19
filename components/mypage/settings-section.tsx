@@ -4,7 +4,6 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Button } from "@/components/ui/button"
 import { Bell, DoorOpen, LogOut, ChevronRight, Settings } from "lucide-react"
 import {
   Dialog,
@@ -23,21 +22,54 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { memberApi } from "@/lib/api/api"
 
-export function SettingsSection() {
+interface SettingsSectionProps {
+  allowAlarm: boolean
+  onAlarmChange: (v: boolean) => Promise<void>
+}
+
+export function SettingsSection({ allowAlarm, onAlarmChange }: SettingsSectionProps) {
   const router = useRouter()
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
   const [isLeaveCompleteOpen, setIsLeaveCompleteOpen] = useState(false)
+  const [alarmLoading, setAlarmLoading] = useState(false)
+  const [leaveLoading, setLeaveLoading] = useState(false)
+  const [logoutLoading, setLogoutLoading] = useState(false)
 
-  const handleLeave = () => {
-    // 실제로는 API 호출
-    setIsLeaveDialogOpen(false)
-    setIsLeaveCompleteOpen(true)
+  const handleLeave = async () => {
+    setLeaveLoading(true)
+    try {
+      await memberApi.leaveRoom()
+      setIsLeaveDialogOpen(false)
+      setIsLeaveCompleteOpen(true)
+    } finally {
+      setLeaveLoading(false)
+    }
   }
 
   const handleLeaveComplete = () => {
     setIsLeaveCompleteOpen(false)
-    router.push("/login")
+    router.push("/")
+  }
+
+  const handleLogout = async () => {
+    setLogoutLoading(true)
+    try {
+      await memberApi.logout()
+      router.push("/")
+    } finally {
+      setLogoutLoading(false)
+    }
+  }
+
+  const handleAlarmToggle = async (v: boolean) => {
+    setAlarmLoading(true)
+    try {
+      await onAlarmChange(v)
+    } finally {
+      setAlarmLoading(false)
+    }
   }
 
   return (
@@ -62,12 +94,12 @@ export function SettingsSection() {
                   <p className="text-sm text-muted-foreground">출석, 일정, 팟 알림</p>
                 </div>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={allowAlarm} onCheckedChange={handleAlarmToggle} disabled={alarmLoading} />
             </div>
 
-            {/* 분반 탈퇴 - 클릭 시 확인 모달 */}
+            {/* 분반 탈퇴 */}
             <button
-              className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors text-left"
+              className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors text-left w-full"
               onClick={() => setIsLeaveDialogOpen(true)}
             >
               <div className="flex items-center gap-4">
@@ -84,8 +116,9 @@ export function SettingsSection() {
 
             {/* 로그아웃 */}
             <button
-              className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors text-left"
-              onClick={() => router.push("/login")}
+              className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors text-left w-full"
+              onClick={handleLogout}
+              disabled={logoutLoading}
             >
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
@@ -101,7 +134,6 @@ export function SettingsSection() {
         </CardContent>
       </Card>
 
-      {/* 분반 탈퇴 확인 모달 */}
       <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -111,17 +143,14 @@ export function SettingsSection() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsLeaveDialogOpen(false)}>
-              취소
-            </Button>
-            <Button variant="destructive" onClick={handleLeave}>
-              탈퇴하기
+            <Button variant="outline" onClick={() => setIsLeaveDialogOpen(false)}>취소</Button>
+            <Button variant="destructive" onClick={handleLeave} disabled={leaveLoading}>
+              {leaveLoading ? "처리 중..." : "탈퇴하기"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* 탈퇴 완료 알림 */}
       <AlertDialog open={isLeaveCompleteOpen} onOpenChange={setIsLeaveCompleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

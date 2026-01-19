@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
@@ -19,25 +19,60 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { memberApi } from "@/lib/api/api"
 
 export default function SettingsPage() {
   const router = useRouter()
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
+  const [allowAlarm, setAllowAlarm] = useState(true)
+  const [alarmLoading, setAlarmLoading] = useState(false)
   const [showLeaveDialog, setShowLeaveDialog] = useState(false)
   const [showLeaveCompleteDialog, setShowLeaveCompleteDialog] = useState(false)
+  const [leaveLoading, setLeaveLoading] = useState(false)
+  const [logoutLoading, setLogoutLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const handleLogout = () => {
-    router.push("/login")
+  useEffect(() => {
+    memberApi
+      .getMyInfo()
+      .then((m) => setAllowAlarm(m.allowAlarm))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleLogout = async () => {
+    setLogoutLoading(true)
+    try {
+      await memberApi.logout()
+      router.push("/")
+    } finally {
+      setLogoutLoading(false)
+    }
   }
 
-  const handleLeaveClass = () => {
-    setShowLeaveDialog(false)
-    setShowLeaveCompleteDialog(true)
+  const handleLeaveClass = async () => {
+    setLeaveLoading(true)
+    try {
+      await memberApi.leaveRoom()
+      setShowLeaveDialog(false)
+      setShowLeaveCompleteDialog(true)
+    } finally {
+      setLeaveLoading(false)
+    }
   }
 
   const handleLeaveComplete = () => {
     setShowLeaveCompleteDialog(false)
-    router.push("/login")
+    router.push("/")
+  }
+
+  const handleAlarmToggle = async (v: boolean) => {
+    setAlarmLoading(true)
+    try {
+      await memberApi.toggleAlarm(v)
+      setAllowAlarm(v)
+    } finally {
+      setAlarmLoading(false)
+    }
   }
 
   return (
@@ -66,7 +101,11 @@ export default function SettingsPage() {
                     <Label>전체 알림</Label>
                     <p className="text-sm text-muted-foreground">모든 알림을 허용하거나 거부합니다</p>
                   </div>
-                  <Switch checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
+                  <Switch
+                    checked={allowAlarm}
+                    onCheckedChange={handleAlarmToggle}
+                    disabled={loading || alarmLoading}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -78,9 +117,14 @@ export default function SettingsPage() {
                 <CardDescription>로그아웃 또는 분반을 나갈 수 있습니다</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start gap-3 bg-transparent" onClick={handleLogout}>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-3 bg-transparent"
+                  onClick={handleLogout}
+                  disabled={logoutLoading}
+                >
                   <LogOut className="h-4 w-4" />
-                  로그아웃
+                  {logoutLoading ? "처리 중..." : "로그아웃"}
                 </Button>
                 <Button
                   variant="outline"
@@ -96,7 +140,6 @@ export default function SettingsPage() {
         </main>
       </div>
 
-      {/* 분반 나가기 확인 다이얼로그 */}
       <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -107,19 +150,24 @@ export default function SettingsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLeaveClass} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              탈퇴하기
+            <AlertDialogAction
+              onClick={handleLeaveClass}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={leaveLoading}
+            >
+              {leaveLoading ? "처리 중..." : "탈퇴하기"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* 탈퇴 완료 다이얼로그 */}
       <AlertDialog open={showLeaveCompleteDialog} onOpenChange={setShowLeaveCompleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>탈퇴 완료되었습니다</AlertDialogTitle>
-            <AlertDialogDescription>분반에서 성공적으로 나갔습니다. 로그인 페이지로 이동합니다.</AlertDialogDescription>
+            <AlertDialogDescription>
+              분반에서 성공적으로 나갔습니다. 로그인 페이지로 이동합니다.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={handleLeaveComplete}>확인</AlertDialogAction>

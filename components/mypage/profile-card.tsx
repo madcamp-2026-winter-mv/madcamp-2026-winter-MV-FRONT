@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -18,34 +17,33 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { memberApi } from "@/lib/api/api"
+import type { MemberResponseDto } from "@/lib/api/types"
 
-interface UserProfile {
-  nickname: string
-  realName: string
-  email: string
-  imageUrl?: string
-  roomCode: string
-  presentationCount: number
-  attendanceRate: number
+interface ProfileCardProps {
+  member: MemberResponseDto | null
+  onUpdate?: () => void
 }
 
-const mockProfile: UserProfile = {
-  nickname: "몰입하는 42",
-  realName: "김몰입",
-  email: "molip42@gmail.com",
-  roomCode: "MAD012",
-  presentationCount: 2,
-  attendanceRate: 95,
-}
-
-export function ProfileCard() {
+export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
-  const [nickname, setNickname] = useState(mockProfile.nickname)
+  const [nickname, setNickname] = useState(member?.nickname ?? "")
   const [isDuplicateChecked, setIsDuplicateChecked] = useState(false)
   const [isNicknameAvailable, setIsNicknameAvailable] = useState<boolean | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const isNicknameChanged = nickname !== mockProfile.nickname
+  const isNicknameChanged = !!member && nickname.trim() !== "" && nickname !== member.nickname
+
+  const handleOpenEdit = () => {
+    setNickname(member?.nickname ?? "")
+    setPreviewImage(null)
+    setIsDuplicateChecked(false)
+    setIsNicknameAvailable(null)
+    setError(null)
+    setIsEditOpen(true)
+  }
 
   const handleNicknameChange = (value: string) => {
     setNickname(value)
@@ -54,7 +52,7 @@ export function ProfileCard() {
   }
 
   const handleDuplicateCheck = () => {
-    // Mock: 중복 확인 로직 (실제로는 서버에 요청)
+    // TODO: 닉네임 중복 확인 API 연동 (예: memberApi.checkNicknameDuplicate(nickname))
     const unavailableNames = ["테스트", "관리자", "익명"]
     const available = !unavailableNames.includes(nickname)
     setIsNicknameAvailable(available)
@@ -72,9 +70,39 @@ export function ProfileCard() {
     }
   }
 
-  const handleSave = () => {
-    // 실제로는 API 호출
-    setIsEditOpen(false)
+  const handleSave = async () => {
+    const v = nickname.trim()
+    if (!v || !member) return
+    if (isNicknameChanged && (!isDuplicateChecked || !isNicknameAvailable)) return
+    setSaving(true)
+    setError(null)
+    try {
+      if (isNicknameChanged) {
+        await memberApi.updateNickname(v)
+      }
+      // TODO: 프로필 사진 업로드 API 연동 (previewImage가 있을 때)
+      setIsEditOpen(false)
+      setPreviewImage(null)
+      onUpdate?.()
+    } catch (e: any) {
+      setError(e?.message || e?.error || "닉네임 변경에 실패했습니다.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!member) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center gap-4 py-8">
+            <div className="h-24 w-24 rounded-full bg-muted animate-pulse" />
+            <div className="h-5 w-32 bg-muted animate-pulse rounded" />
+            <div className="h-4 w-48 bg-muted animate-pulse rounded" />
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -84,37 +112,38 @@ export function ProfileCard() {
           <div className="flex flex-col items-center text-center">
             <div className="relative">
               <Avatar className="h-24 w-24 border-4 border-primary">
-                <AvatarImage src={mockProfile.imageUrl || "/placeholder.svg"} alt={mockProfile.nickname} />
                 <AvatarFallback className="bg-primary/20 text-primary text-xl font-bold">
-                  {mockProfile.nickname.slice(-2)}
+                  {String(member.nickname).slice(-2)}
                 </AvatarFallback>
               </Avatar>
               <Button
                 size="icon"
                 variant="secondary"
                 className="absolute bottom-0 right-0 h-8 w-8 rounded-full border shadow-sm"
-                onClick={() => setIsEditOpen(true)}
+                onClick={handleOpenEdit}
               >
                 <Pencil className="h-4 w-4" />
                 <span className="sr-only">프로필 수정</span>
               </Button>
             </div>
 
-            <h2 className="mt-4 text-xl font-bold">{mockProfile.nickname}</h2>
-            <p className="text-sm text-muted-foreground">{mockProfile.realName}</p>
-            <p className="text-xs text-muted-foreground mt-1">{mockProfile.email}</p>
+            <h2 className="mt-4 text-xl font-bold">{member.nickname}</h2>
+            <p className="text-sm text-muted-foreground">{member.realName}</p>
+            <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
 
-            <Badge variant="outline" className="mt-3 border-primary/50 text-primary">
-              {mockProfile.roomCode} 분반
-            </Badge>
+            {member.roomName && (
+              <Badge variant="outline" className="mt-3 border-primary/50 text-primary">
+                {member.roomName} 분반
+              </Badge>
+            )}
 
             <div className="grid grid-cols-2 gap-6 mt-6 w-full max-w-[200px]">
               <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{mockProfile.presentationCount}</p>
+                <p className="text-2xl font-bold text-primary">{member.presentationCount}</p>
                 <p className="text-xs text-muted-foreground">발표 횟수</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{mockProfile.attendanceRate}%</p>
+                <p className="text-2xl font-bold text-primary">{Math.round(member.attendanceRate)}%</p>
                 <p className="text-xs text-muted-foreground">출석률</p>
               </div>
             </div>
@@ -122,7 +151,6 @@ export function ProfileCard() {
         </CardContent>
       </Card>
 
-      {/* 프로필 편집 모달 */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
@@ -134,9 +162,9 @@ export function ProfileCard() {
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <Avatar className="h-32 w-32 border-4 border-primary">
-                  <AvatarImage src={previewImage || mockProfile.imageUrl || "/placeholder.svg"} />
+                  <AvatarImage src={previewImage || "/placeholder.svg"} alt={nickname} />
                   <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
-                    {nickname.slice(-2)}
+                    {nickname.slice(-2) || "?"}
                   </AvatarFallback>
                 </Avatar>
                 {previewImage && (
@@ -158,7 +186,13 @@ export function ProfileCard() {
                   <Upload className="h-4 w-4" />
                   이미지 선택
                 </Label>
-                <Input id="image-upload" type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                <Input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
                 <p className="text-xs text-muted-foreground">JPG, PNG, GIF (최대 5MB)</p>
               </div>
             </div>
@@ -185,7 +219,9 @@ export function ProfileCard() {
                 </Button>
               </div>
               {isDuplicateChecked && (
-                <div className={`flex items-center gap-1 text-sm ${isNicknameAvailable ? "text-green-600" : "text-destructive"}`}>
+                <div
+                  className={`flex items-center gap-1 text-sm ${isNicknameAvailable ? "text-green-600" : "text-destructive"}`}
+                >
                   {isNicknameAvailable ? (
                     <>
                       <Check className="h-4 w-4" />
@@ -200,16 +236,21 @@ export function ProfileCard() {
                 </div>
               )}
             </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
           <DialogFooter>
-            <Button variant="outline" className="bg-transparent" onClick={() => setIsEditOpen(false)}>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
               취소
             </Button>
-            <Button 
+            <Button
               onClick={handleSave}
-              disabled={isNicknameChanged && (!isDuplicateChecked || !isNicknameAvailable)}
+              disabled={
+                saving ||
+                (!isNicknameChanged && !previewImage) ||
+                (isNicknameChanged && (!isDuplicateChecked || !isNicknameAvailable))
+              }
             >
-              저장하기
+              {saving ? "저장 중..." : "저장하기"}
             </Button>
           </DialogFooter>
         </DialogContent>

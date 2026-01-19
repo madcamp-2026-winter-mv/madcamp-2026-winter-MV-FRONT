@@ -1,106 +1,154 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send, Users, ArrowLeft } from "lucide-react"
+import { Send, Users, ArrowLeft, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { chatApi, getChatWsUrl, memberApi } from "@/lib/api/api"
+import type { ChatRoomResponseDto, ChatMessageDto } from "@/lib/api/types"
 
-// Mock 채팅방 목록
-const mockChatRooms = [
-  {
-    id: "1",
-    title: "치킨 팟",
-    participants: ["몰입하는 7", "몰입하는 3", "몰입하는 15"],
-    lastMessage: "6시에 N1에서 만나요!",
-    lastMessageTime: "16:45",
-    unreadCount: 2,
-    postTitle: "오늘 저녁 치킨 팟 구해요",
-  },
-  {
-    id: "2",
-    title: "스터디 그룹",
-    participants: ["몰입하는 12", "몰입하는 5", "몰입하는 22", "몰입하는 8"],
-    lastMessage: "내일 오전 10시 어때요?",
-    lastMessageTime: "15:30",
-    unreadCount: 0,
-    postTitle: "React 스터디 모집합니다",
-  },
-  {
-    id: "3",
-    title: "헬스 팟",
-    participants: ["몰입하는 1", "몰입하는 9"],
-    lastMessage: "내일부터 시작합시다",
-    lastMessageTime: "어제",
-    unreadCount: 5,
-    postTitle: "헬스 같이 가실 분",
-  },
-]
-
-// Mock 메시지
-const mockMessages: Record<
-  string,
-  Array<{
-    id: string
-    author: string
-    content: string
-    time: string
-    isMe: boolean
-  }>
-> = {
-  "1": [
-    { id: "1", author: "몰입하는 7", content: "오늘 6시에 BBQ 가실 분들 여기 모이세요!", time: "15:30", isMe: true },
-    { id: "2", author: "몰입하는 3", content: "저 참가합니다!", time: "15:32", isMe: false },
-    { id: "3", author: "몰입하는 15", content: "저도요~ 황금올리브 맛있죠", time: "15:35", isMe: false },
-    { id: "4", author: "몰입하는 7", content: "좋아요! N1에서 6시에 만나요", time: "16:00", isMe: true },
-    { id: "5", author: "몰입하는 3", content: "네 알겠습니다!", time: "16:30", isMe: false },
-    { id: "6", author: "몰입하는 15", content: "6시에 N1에서 만나요!", time: "16:45", isMe: false },
-  ],
-  "2": [
-    { id: "1", author: "몰입하는 12", content: "React 스터디 시작해볼까요?", time: "14:00", isMe: false },
-    { id: "2", author: "몰입하는 5", content: "좋아요! 시간은 언제가 좋을까요?", time: "14:15", isMe: false },
-    { id: "3", author: "몰입하는 22", content: "저는 오전이 좋아요", time: "15:00", isMe: false },
-    { id: "4", author: "몰입하는 8", content: "내일 오전 10시 어때요?", time: "15:30", isMe: false },
-  ],
-  "3": [
-    { id: "1", author: "몰입하는 1", content: "헬스 같이 가실 분 구해요", time: "어제", isMe: false },
-    { id: "2", author: "몰입하는 9", content: "저 합류합니다!", time: "어제", isMe: true },
-    { id: "3", author: "몰입하는 1", content: "내일부터 시작합시다", time: "어제", isMe: false },
-  ],
+function formatTime(s: string) {
+  try {
+    const d = new Date(s)
+    return isNaN(d.getTime()) ? s : d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })
+  } catch {
+    return s
+  }
 }
 
-const currentUser = "몰입하는 7"
-
 export default function ChatPage() {
-  const [selectedRoom, setSelectedRoom] = useState<string | null>(null)
+  const [rooms, setRooms] = useState<ChatRoomResponseDto[]>([])
+  const [messages, setMessages] = useState<ChatMessageDto[]>([])
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
+  const [myNickname, setMyNickname] = useState<string | null>(null)
   const [newMessage, setNewMessage] = useState("")
-  const [messages, setMessages] = useState(mockMessages)
+  const [roomsLoading, setRoomsLoading] = useState(true)
+  const [messagesLoading, setMessagesLoading] = useState(false)
+  const [wsConnected, setWsConnected] = useState(false)
+  const [sendDisabled, setSendDisabled] = useState(false)
+  const stompRef = useRef<any>(null)
+  const subRef = useRef<any>(null)
 
-  const selectedRoomData = mockChatRooms.find((r) => r.id === selectedRoom)
-  const roomMessages = selectedRoom ? messages[selectedRoom] || [] : []
+  const selectedRoom = rooms.find((r) => r.chatRoomId === selectedRoomId)
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedRoom) return
+  // 로그인 여부 및 내 정보
+  useEffect(() => {
+    let mounted = true
+    memberApi
+      .getMyInfo()
+      .then((m) => { if (mounted) setMyNickname(m.nickname) })
+      .catch(() => {})
+    return () => { mounted = false }
+  }, [])
 
-    const newMsg = {
-      id: String(Date.now()),
-      author: currentUser,
-      content: newMessage,
-      time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
-      isMe: true,
+  // 채팅방 목록
+  useEffect(() => {
+    let mounted = true
+    setRoomsLoading(true)
+    chatApi
+      .getMyRooms()
+      .then((list) => { if (mounted) setRooms(Array.isArray(list) ? list : []) })
+      .catch(() => { if (mounted) setRooms([]) })
+      .finally(() => { if (mounted) setRoomsLoading(false) })
+    return () => { mounted = false }
+  }, [])
+
+  // 방 선택 시: 메시지 로드 + STOMP 구독
+  const connectAndSubscribe = useCallback(
+    async (roomId: number) => {
+      // 기존 구독 해제
+      if (subRef.current) {
+        try { subRef.current.unsubscribe() } catch { /* noop */ }
+        subRef.current = null
+      }
+      if (stompRef.current) {
+        try { stompRef.current.deactivate() } catch { /* noop */ }
+        stompRef.current = null
+      }
+      setWsConnected(false)
+
+      setMessagesLoading(true)
+      try {
+        const list = await chatApi.getMessages(roomId)
+        setMessages(Array.isArray(list) ? list : [])
+      } catch {
+        setMessages([])
+      } finally {
+        setMessagesLoading(false)
+      }
+
+      // STOMP 연결 및 구독 (동적 import로 SSR 회피)
+      try {
+        const { Client } = await import("@stomp/stompjs")
+        const SockJS = (await import("sockjs-client")).default
+        const wsUrl = getChatWsUrl()
+
+        const client = new Client({
+          webSocketFactory: () => new SockJS(wsUrl) as any,
+          onConnect: () => {
+            setWsConnected(true)
+            const sub = client.subscribe(`/sub/chat/room/${roomId}`, (msg) => {
+              try {
+                const d = JSON.parse(msg.body) as ChatMessageDto
+                setMessages((prev) => [...prev, d])
+              } catch { /* ignore */ }
+            })
+            subRef.current = sub
+          },
+          onStompError: () => setWsConnected(false),
+          onWebSocketClose: () => setWsConnected(false),
+        })
+        client.activate()
+        stompRef.current = client
+      } catch {
+        setWsConnected(false)
+      }
+    },
+    []
+  )
+
+  useEffect(() => {
+    if (selectedRoomId != null) {
+      connectAndSubscribe(selectedRoomId)
+    } else {
+      setMessages([])
+      if (subRef.current) { try { subRef.current.unsubscribe() } catch { /* noop */ }; subRef.current = null }
+      if (stompRef.current) { try { stompRef.current.deactivate() } catch { /* noop */ }; stompRef.current = null }
+      setWsConnected(false)
+    }
+    return () => {
+      if (subRef.current) { try { subRef.current.unsubscribe() } catch { /* noop */ } }
+      if (stompRef.current) { try { stompRef.current.deactivate() } catch { /* noop */ } }
+    }
+  }, [selectedRoomId, connectAndSubscribe])
+
+  const handleSendMessage = async () => {
+    const content = newMessage.trim()
+    if (!content || selectedRoomId == null || !myNickname) return
+
+    const payload = {
+      chatRoomId: selectedRoomId,
+      senderNickname: myNickname,
+      content,
+      timestamp: new Date().toISOString(),
     }
 
-    setMessages({
-      ...messages,
-      [selectedRoom]: [...(messages[selectedRoom] || []), newMsg],
-    })
-    setNewMessage("")
+    setSendDisabled(true)
+    try {
+      const c = stompRef.current
+      if (c?.connected) {
+        c.publish({ destination: "/pub/chat/message", body: JSON.stringify(payload) })
+        setNewMessage("")
+      }
+    } finally {
+      setSendDisabled(false)
+    }
   }
 
   return (
@@ -119,103 +167,135 @@ export default function ChatPage() {
               </CardHeader>
               <CardContent className="p-0">
                 <ScrollArea className="h-[calc(100vh-240px)]">
-                  {mockChatRooms.map((room) => (
-                    <button
-                      key={room.id}
-                      onClick={() => setSelectedRoom(room.id)}
-                      className={cn(
-                        "w-full p-4 text-left hover:bg-muted/50 transition-colors border-b",
-                        selectedRoom === room.id && "bg-primary/10",
-                      )}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Avatar>
-                          <AvatarFallback className="bg-primary/20 text-primary">
-                            {room.title.slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium truncate">{room.title}</span>
-                            <span className="text-xs text-muted-foreground">{room.lastMessageTime}</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate">{room.lastMessage}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Users className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">{room.participants.length}명</span>
-                            {room.unreadCount > 0 && (
-                              <Badge className="ml-auto bg-primary text-primary-foreground text-xs px-1.5 py-0">
-                                {room.unreadCount}
-                              </Badge>
-                            )}
+                  {roomsLoading ? (
+                    <div className="p-6 text-center text-sm text-muted-foreground">로딩 중...</div>
+                  ) : rooms.length === 0 ? (
+                    <div className="p-6 text-center text-sm text-muted-foreground">
+                      <MessageCircle className="mx-auto h-10 w-10 mb-2 opacity-50" />
+                      <p>참여 중인 채팅방이 없습니다</p>
+                      <p className="text-xs mt-1">팟 모집 글에서 모집 완료 시 채팅방이 생성됩니다</p>
+                    </div>
+                  ) : (
+                    rooms.map((room) => (
+                      <button
+                        key={room.chatRoomId}
+                        onClick={() => setSelectedRoomId(room.chatRoomId)}
+                        className={cn(
+                          "w-full p-4 text-left hover:bg-muted/50 transition-colors border-b",
+                          selectedRoomId === room.chatRoomId && "bg-primary/10"
+                        )}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Avatar>
+                            <AvatarFallback className="bg-primary/20 text-primary">
+                              {room.roomName.slice(0, 2)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{room.roomName}</div>
+                            <p className="text-xs text-muted-foreground truncate">
+                              게시글 #{room.postId}
+                            </p>
                           </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    ))
+                  )}
                 </ScrollArea>
               </CardContent>
             </Card>
 
             {/* 채팅 영역 */}
             <Card className="lg:col-span-2 flex flex-col">
-              {selectedRoom && selectedRoomData ? (
+              {selectedRoom && selectedRoomId != null ? (
                 <>
-                  {/* 채팅방 헤더 */}
                   <CardHeader className="pb-3 border-b">
                     <div className="flex items-center gap-3">
-                      <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSelectedRoom(null)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="lg:hidden"
+                        onClick={() => setSelectedRoomId(null)}
+                      >
                         <ArrowLeft className="h-5 w-5" />
                       </Button>
                       <Avatar>
                         <AvatarFallback className="bg-primary/20 text-primary">
-                          {selectedRoomData.title.slice(0, 2)}
+                          {selectedRoom.roomName.slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <h2 className="font-semibold">{selectedRoomData.title}</h2>
-                        <p className="text-xs text-muted-foreground">{selectedRoomData.participants.join(", ")}</p>
+                        <h2 className="font-semibold">{selectedRoom.roomName}</h2>
+                        <a
+                          href={`/community/${selectedRoom.postId}`}
+                          className="text-xs text-muted-foreground hover:text-primary"
+                        >
+                          게시글 보기 #{selectedRoom.postId}
+                        </a>
                       </div>
-                      <Badge variant="outline" className="text-xs">
-                        {selectedRoomData.postTitle}
-                      </Badge>
+                      {!wsConnected && (
+                        <span className="text-xs text-amber-600">실시간 연결 안 됨</span>
+                      )}
                     </div>
                   </CardHeader>
 
-                  {/* 메시지 목록 */}
                   <ScrollArea className="flex-1 p-4">
-                    <div className="space-y-4">
-                      {roomMessages.map((msg) => (
-                        <div key={msg.id} className={cn("flex gap-3", msg.isMe && "flex-row-reverse")}>
-                          {!msg.isMe && (
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-muted text-xs">{msg.author.slice(-2)}</AvatarFallback>
-                            </Avatar>
-                          )}
-                          <div className={cn("max-w-[70%]", msg.isMe && "items-end")}>
-                            {!msg.isMe && <p className="text-xs text-muted-foreground mb-1">{msg.author}</p>}
+                    {messagesLoading ? (
+                      <div className="py-8 text-center text-sm text-muted-foreground">메시지 로딩 중...</div>
+                    ) : (
+                      <div className="space-y-4">
+                        {messages.map((msg, i) => {
+                          const isMe = msg.senderNickname === myNickname
+                          return (
                             <div
-                              className={cn(
-                                "rounded-lg px-3 py-2",
-                                msg.isMe ? "bg-primary text-primary-foreground" : "bg-muted",
-                              )}
+                              key={i}
+                              className={cn("flex gap-3", isMe && "flex-row-reverse")}
                             >
-                              <p className="text-sm">{msg.content}</p>
+                              {!isMe && (
+                                <Avatar className="h-8 w-8 shrink-0">
+                                  <AvatarFallback className="bg-muted text-xs">
+                                    {String(msg.senderNickname).slice(-2)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                              <div className={cn("max-w-[70%]", isMe && "items-end")}>
+                                {!isMe && (
+                                  <p className="text-xs text-muted-foreground mb-1">
+                                    {msg.senderNickname}
+                                  </p>
+                                )}
+                                <div
+                                  className={cn(
+                                    "rounded-lg px-3 py-2",
+                                    isMe ? "bg-primary text-primary-foreground" : "bg-muted"
+                                  )}
+                                >
+                                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                </div>
+                                <p
+                                  className={cn(
+                                    "text-xs text-muted-foreground mt-1",
+                                    isMe && "text-right"
+                                  )}
+                                >
+                                  {formatTime(msg.timestamp)}
+                                </p>
+                              </div>
                             </div>
-                            <p className={cn("text-xs text-muted-foreground mt-1", msg.isMe && "text-right")}>
-                              {msg.time}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </ScrollArea>
 
-                  {/* 메시지 입력 */}
                   <div className="p-4 border-t">
                     <div className="flex gap-2">
                       <Input
-                        placeholder="메시지를 입력하세요..."
+                        placeholder={
+                          wsConnected
+                            ? "메시지를 입력하세요..."
+                            : "실시간 연결이 필요합니다 (새로고침 후 재시도)"
+                        }
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyDown={(e) => {
@@ -224,8 +304,12 @@ export default function ChatPage() {
                             handleSendMessage()
                           }
                         }}
+                        disabled={!wsConnected}
                       />
-                      <Button onClick={handleSendMessage}>
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={!wsConnected || !newMessage.trim() || sendDisabled}
+                      >
                         <Send className="h-4 w-4" />
                       </Button>
                     </div>
@@ -237,7 +321,7 @@ export default function ChatPage() {
                     <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>채팅방을 선택해주세요</p>
                     <p className="text-sm mt-2">
-                      팟 모집 게시글에서 채팅방을 개설하면
+                      팟 모집 게시글에서 채팅방이 개설되면
                       <br />
                       여기에 표시됩니다
                     </p>
