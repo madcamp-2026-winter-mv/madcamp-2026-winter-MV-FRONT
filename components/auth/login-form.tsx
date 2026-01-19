@@ -42,7 +42,7 @@ export function LoginForm() {
           Google로 계속하기
         </Button>
         <p className="text-sm text-muted-foreground text-center">
-          Google 계정으로 로그인하면 몰 봐를 이용할 수 있습니다.
+          Google 계정으로 로그인 시 이용할 수 있습니다.
         </p>
       </CardContent>
     </Card>

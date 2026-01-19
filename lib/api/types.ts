@@ -5,8 +5,14 @@ declare const process: {
   };
 };
 
-// API Base URL (백엔드 주소). 앱은 localhost:3000에서 접속. 기본값: 배포 서버. 로컬 백엔드 사용 시 .env.local 에 NEXT_PUBLIC_API_URL=http://localhost:8080
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://madcamp-view.com';
+// API Base URL (백엔드 주소)
+// 배포 환경: Vercel 환경 변수에서 NEXT_PUBLIC_API_URL 설정 필요
+//   - 백엔드가 EC2에서 실행 중이라면: EC2의 공인 IP 또는 도메인 (예: http://[EC2-IP]:8080 또는 https://api.madcamp-view.com)
+// 로컬 개발: .env.local 파일에 NEXT_PUBLIC_API_URL=http://localhost:8080 설정
+// 
+// 중요: 백엔드 서버의 실제 접근 가능한 URL을 설정해야 합니다!
+// 현재 기본값은 프론트엔드 도메인인데, 이는 잘못된 설정입니다.
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.madcamp-view.com';
 
 // API URL 확인용 (디버깅)
 if (typeof window !== 'undefined') {
