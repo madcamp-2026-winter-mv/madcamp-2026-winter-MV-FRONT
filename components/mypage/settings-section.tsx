@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
+import { Button } from "@/components/ui/button"
 import { Bell, DoorOpen, LogOut, ChevronRight, Settings } from "lucide-react"
 import {
   Dialog,

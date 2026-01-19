@@ -9,6 +9,7 @@ import { SettingsSection } from "@/components/mypage/settings-section"
 import { memberApi } from "@/lib/api/api"
 import type { MemberResponseDto } from "@/lib/api/types"
 
+
 export default function MyPage() {
   const [member, setMember] = useState<MemberResponseDto | null>(null)
   const [loading, setLoading] = useState(true)
