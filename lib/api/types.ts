@@ -56,7 +56,7 @@ export interface ScheduleRequestDto {
   title: string;
   content: string;
   startTime: string; // ISO 8601 format
-  important: boolean;
+  isImportant: boolean;
 }
 
 // ========== Response DTOs ==========
@@ -119,7 +119,7 @@ export interface MemberResponseDto {
   roomId?: number;
   role: string; // 'OWNER' | 'ADMIN' | 'MEMBER'
   presentationCount: number;
-  attendanceCount?: number;
+  attendanceCount: number;
   attendanceRate: number;
   writtenPostsCount: number;
   commentedPostsCount: number;

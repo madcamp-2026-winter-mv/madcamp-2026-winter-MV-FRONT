@@ -321,6 +321,14 @@ export const memberApi = {
       method: 'DELETE',
     });
   },
+
+  /** 분반 가입 (초대 코드) — POST /api/members/me/room/join. 백엔드에 없으면 roomApi.joinRoom(/api/rooms/join) 사용 */
+  joinRoom: (inviteCode: string): Promise<string> => {
+    return apiRequest<string>('/api/members/me/room/join', {
+      method: 'POST',
+      body: JSON.stringify({ inviteCode }),
+    });
+  },
 };
 
 // ========== Category APIs ==========
