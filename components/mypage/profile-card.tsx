@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Pencil, Upload, X } from "lucide-react"
+import { Pencil, Upload, X, Check } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,25 @@ const mockProfile: UserProfile = {
 export function ProfileCard() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const [nickname, setNickname] = useState(mockProfile.nickname)
+  const [isDuplicateChecked, setIsDuplicateChecked] = useState(false)
+  const [isNicknameAvailable, setIsNicknameAvailable] = useState<boolean | null>(null)
+
+  const isNicknameChanged = nickname !== mockProfile.nickname
+
+  const handleNicknameChange = (value: string) => {
+    setNickname(value)
+    setIsDuplicateChecked(false)
+    setIsNicknameAvailable(null)
+  }
+
+  const handleDuplicateCheck = () => {
+    // Mock: 중복 확인 로직 (실제로는 서버에 요청)
+    const unavailableNames = ["테스트", "관리자", "익명"]
+    const available = !unavailableNames.includes(nickname)
+    setIsNicknameAvailable(available)
+    setIsDuplicateChecked(true)
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -103,20 +122,21 @@ export function ProfileCard() {
         </CardContent>
       </Card>
 
-      {/* 프로필 사진 편집 모달 */}
+      {/* 프로필 편집 모달 */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>프로필 사진 변경</DialogTitle>
-            <DialogDescription>새로운 프로필 사진을 업로드하세요</DialogDescription>
+            <DialogTitle>프로필 수정</DialogTitle>
+            <DialogDescription>프로필 사진과 닉네임을 수정할 수 있습니다</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-6 py-4">
+            {/* 프로필 사진 */}
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <Avatar className="h-32 w-32 border-4 border-primary">
                   <AvatarImage src={previewImage || mockProfile.imageUrl || "/placeholder.svg"} />
                   <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
-                    {mockProfile.nickname.slice(-2)}
+                    {nickname.slice(-2)}
                   </AvatarFallback>
                 </Avatar>
                 {previewImage && (
@@ -142,12 +162,55 @@ export function ProfileCard() {
                 <p className="text-xs text-muted-foreground">JPG, PNG, GIF (최대 5MB)</p>
               </div>
             </div>
+
+            {/* 닉네임 수정 */}
+            <div className="space-y-2">
+              <Label htmlFor="nickname">닉네임</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="nickname"
+                  value={nickname}
+                  onChange={(e) => handleNicknameChange(e.target.value)}
+                  placeholder="닉네임을 입력하세요"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleDuplicateCheck}
+                  disabled={!nickname || !isNicknameChanged}
+                  className="bg-transparent shrink-0"
+                >
+                  중복확인
+                </Button>
+              </div>
+              {isDuplicateChecked && (
+                <div className={`flex items-center gap-1 text-sm ${isNicknameAvailable ? "text-green-600" : "text-destructive"}`}>
+                  {isNicknameAvailable ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      사용 가능한 닉네임입니다.
+                    </>
+                  ) : (
+                    <>
+                      <X className="h-4 w-4" />
+                      이미 사용 중인 닉네임입니다.
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+            <Button variant="outline" className="bg-transparent" onClick={() => setIsEditOpen(false)}>
               취소
             </Button>
-            <Button onClick={handleSave}>저장하기</Button>
+            <Button 
+              onClick={handleSave}
+              disabled={isNicknameChanged && (!isDuplicateChecked || !isNicknameAvailable)}
+            >
+              저장하기
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
