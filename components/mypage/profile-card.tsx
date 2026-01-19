@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { memberApi } from "@/lib/api/api"
+import { useAuth } from "@/hooks/use-auth"
 import type { MemberResponseDto } from "@/lib/api/types"
 
 interface ProfileCardProps {
@@ -26,6 +27,8 @@ interface ProfileCardProps {
 }
 
 export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
+  const { user: authUser } = useAuth()
+  console.log("검사할 구글 유저 객체:", authUser)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [nickname, setNickname] = useState(member?.nickname ?? "")
