@@ -16,29 +16,30 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, isLoading, router])
 
-  // 페이지 로드 시 사용자 정보 확인 (OAuth2 콜백 후 자동 로그인 확인)
+  // app/login/page.tsx 수정안
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      // 주기적으로 사용자 정보 확인 (OAuth2 로그인 후 세션 생성 대기)
+    // 1. 이미 로그인 중이거나 로딩 중이면 아무것도 안 함
+    if (isLoading || isAuthenticated) return;
+
+    // 2. URL 확인: OAuth 성공 파라미터가 있을 때만 '적극적으로' 확인
+    const urlParams = new URLSearchParams(window.location.search);
+    const isOAuthSuccess = urlParams.get('oauth_success') === 'true';
+
+    if (isOAuthSuccess) {
       const checkAuth = async () => {
         try {
-          await refetch()
+          await refetch();
         } catch (error) {
-          // 로그인되지 않은 상태
+          console.error("인증 확인 실패:", error);
         }
-      }
+      };
+
+      checkAuth(); // 즉시 확인
+      const timer = setTimeout(checkAuth, 1000); // 1초 뒤 한 번 더 확인 (세션 생성 지연 대비)
       
-      // 초기 확인
-      checkAuth()
-      
-      // 1초 후 다시 확인 (OAuth2 콜백 대기)
-      const timer = setTimeout(() => {
-        checkAuth()
-      }, 1000)
-      
-      return () => clearTimeout(timer)
+      return () => clearTimeout(timer);
     }
-  }, [isLoading, isAuthenticated, refetch])
+  }, [isLoading, isAuthenticated]); // refetch는 제외 (무한루프 방지)
 
   if (isLoading) {
     return (
@@ -46,6 +47,7 @@ export default function LoginPage() {
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="text-muted-foreground">로딩 중...</p>
+          <p className="text-xs text-muted-foreground/60">인증 정보를 확인하는 중입니다</p>
         </div>
       </div>
     )
@@ -66,20 +68,6 @@ export default function LoginPage() {
             <br />
             출석, 일정, 커뮤니티, 투표를 한 곳에서.
           </p>
-          <div className="flex justify-center gap-8 pt-4 text-background/60 text-sm">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">500+</div>
-              <div>캠퍼</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">20+</div>
-              <div>분반</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">10K+</div>
-              <div>게시글</div>
-            </div>
-          </div>
         </div>
       </div>
 
