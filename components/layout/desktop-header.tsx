@@ -45,10 +45,16 @@ export function DesktopHeader({ title }: DesktopHeaderProps) {
       <div className="flex items-center gap-4">
         {/* Search */}
         <form onSubmit={handleSearch} className="relative hidden lg:block">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <button
+            type="submit"
+            className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+            aria-label="검색"
+          >
+            <Search className="h-4 w-4" />
+          </button>
           <Input
             placeholder="게시글 검색..."
-            className="w-64 pl-9"
+            className="w-64 pl-10"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
