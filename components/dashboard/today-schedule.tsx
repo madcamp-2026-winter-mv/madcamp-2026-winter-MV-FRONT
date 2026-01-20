@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock } from "lucide-react"
+import { Calendar, Clock, Star } from "lucide-react"
 import { roomApi } from "@/lib/api/api"
 import type { Schedule } from "@/lib/api/types"
 
@@ -50,8 +50,11 @@ export function TodaySchedule({ roomId }: TodayScheduleProps) {
     roomApi
       .getSchedules(roomId)
       .then((list) => {
-        const today = new Date().toDateString()
-        setSchedules(list.filter((s) => new Date(s.startTime).toDateString() === today))
+        const now = Date.now()
+        const upcoming = list
+          .filter((s) => new Date(s.startTime).getTime() > now)
+          .slice(0, 3)
+        setSchedules(upcoming)
       })
       .catch(() => setSchedules([]))
       .finally(() => setLoading(false))
@@ -63,7 +66,7 @@ export function TodaySchedule({ roomId }: TodayScheduleProps) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Calendar className="h-4 w-4 text-primary" />
-            오늘의 일정
+            일정
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -79,7 +82,7 @@ export function TodaySchedule({ roomId }: TodayScheduleProps) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Calendar className="h-4 w-4 text-primary" />
-            오늘의 일정
+            일정
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -95,7 +98,7 @@ export function TodaySchedule({ roomId }: TodayScheduleProps) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Calendar className="h-4 w-4 text-primary" />
-            오늘의 일정
+            일정
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -110,7 +113,7 @@ export function TodaySchedule({ roomId }: TodayScheduleProps) {
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Calendar className="h-4 w-4 text-primary" />
-          오늘의 일정
+          일정
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -118,23 +121,32 @@ export function TodaySchedule({ roomId }: TodayScheduleProps) {
           {schedules.map((s) => {
             const dDay = formatTimeAgo(s.startTime)
             const isUpcoming = dDay != null
+            const isImportant = !!(s.important ?? s.isImportant)
             return (
               <div
                 key={s.scheduleId}
                 className={`flex items-start gap-3 rounded-lg p-3 transition-colors ${
                   isUpcoming ? "bg-primary/10 border border-primary/20" : "bg-muted/50"
-                }`}
+                } ${isImportant ? "border-l-4 border-amber-500" : ""}`}
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
-                  <Clock className="h-5 w-5 text-primary" />
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                    isImportant ? "bg-amber-100 dark:bg-amber-900/40" : "bg-primary/20"
+                  }`}
+                >
+                  {isImportant ? (
+                    <Star className="h-5 w-5 text-amber-600 dark:text-amber-400 fill-amber-600 dark:fill-amber-400" />
+                  ) : (
+                    <Clock className="h-5 w-5 text-primary" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-medium text-sm">{s.title}</h4>
-                    {(s.important ?? s.isImportant) && (
-                      <Badge variant="secondary" className="text-xs">
-                        중요
-                      </Badge>
+                    <h4 className={`font-medium text-sm ${isImportant ? "font-semibold text-amber-900 dark:text-amber-100" : ""}`}>
+                      {s.title}
+                    </h4>
+                    {isImportant && (
+                      <Badge className="bg-amber-500/90 text-amber-950 text-xs hover:bg-amber-500/90">중요</Badge>
                     )}
                     {isUpcoming && dDay && (
                       <Badge className="bg-primary text-primary-foreground text-xs">{dDay}</Badge>

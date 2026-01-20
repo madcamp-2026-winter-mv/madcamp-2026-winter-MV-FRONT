@@ -212,9 +212,10 @@ export default function AdminPage() {
 
   const handleAddSchedule = async () => {
     if (!roomId || !scheduleForm.title.trim()) return
-    const datePart = scheduleForm.startDate || new Date().toISOString().slice(0, 10)
+    const datePart = scheduleForm.startDate || new Date().toLocaleDateString("en-CA")
     const timePart = scheduleForm.startTime || "09:00"
-    const startTime = new Date(`${datePart}T${timePart}:00`).toISOString()
+    // 백엔드 ScheduleRequestDto.startTime은 LocalDateTime(타임존 없음). toISOString()은 UTC로 바꿔 13:00 KST→04:00 UTC가 되어 버그 유발. 로컬 날짜·시간 문자열만 전송.
+    const startTime = `${datePart}T${timePart}:00`
     setScheduleSaving(true)
     try {
       await adminApi.addSchedule(roomId, {
