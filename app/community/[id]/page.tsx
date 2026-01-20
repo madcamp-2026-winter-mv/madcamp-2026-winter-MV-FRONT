@@ -192,25 +192,24 @@ export default function PostDetailPage() {
     }
   }
 
-  const handleConfirmParty = async (): Promise<boolean> => {
-    if (!postId || confirmingParty) return false
+  const handleConfirmParty = async (): Promise<number | undefined> => {
+    if (!postId || confirmingParty) return undefined
     const ids = [...new Set(selectedParticipantIds)]
     if (ids.length === 0) {
       toast({ title: "참가자를 한 명 이상 선택해 주세요.", variant: "destructive" })
-      return false
+      return undefined
     }
     setConfirmingParty(true)
     try {
-      await partyApi.confirmParty(postId, ids)
+      const chatRoomId = await partyApi.confirmParty(postId, ids)
       toast({ title: "모집이 완료되었습니다. 채팅방에서 대화를 나눠보세요." })
       setSelectedParticipantIds([])
       refetch()
-      // TODO: 생성된 채팅방으로 deep link (/chat?room={chatRoomId})
-      return true
+      return chatRoomId
     } catch (e: unknown) {
       const err = e as { message?: string; error?: string }
       toast({ title: "채팅방 만들기 실패", description: err?.message || err?.error, variant: "destructive" })
-      return false
+      return undefined
     } finally {
       setConfirmingParty(false)
     }
@@ -673,8 +672,11 @@ export default function PostDetailPage() {
             <Button variant="outline" onClick={() => setShowChatModal(false)}>취소</Button>
             <Button
               onClick={async () => {
-                const ok = await handleConfirmParty()
-                if (ok) setShowChatModal(false)
+                const chatRoomId = await handleConfirmParty()
+                if (chatRoomId != null) {
+                  setShowChatModal(false)
+                  router.push(`/chat?room=${chatRoomId}`)
+                }
               }}
               disabled={confirmingParty}
             >

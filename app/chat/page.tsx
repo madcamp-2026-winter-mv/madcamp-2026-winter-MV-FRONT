@@ -1,13 +1,16 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
+import Link from "next/link"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from "@/components/ui/badge"
 import { Send, Users, ArrowLeft, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { chatApi, getChatWsUrl, memberApi } from "@/lib/api/api"
@@ -22,7 +25,24 @@ function formatTime(s: string) {
   }
 }
 
+function formatRoomTime(s: string) {
+  try {
+    const d = new Date(s)
+    if (isNaN(d.getTime())) return s
+    const now = new Date()
+    const diff = now.getTime() - d.getTime()
+    if (diff < 24 * 60 * 60 * 1000 && d.getDate() === now.getDate()) {
+      return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })
+    }
+    if (diff < 48 * 60 * 60 * 1000 && d.getDate() === now.getDate() - 1) return "어제"
+    return d.toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })
+  } catch {
+    return s
+  }
+}
+
 export default function ChatPage() {
+  const searchParams = useSearchParams()
   const [rooms, setRooms] = useState<ChatRoomResponseDto[]>([])
   const [messages, setMessages] = useState<ChatMessageDto[]>([])
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
@@ -34,8 +54,18 @@ export default function ChatPage() {
   const [sendDisabled, setSendDisabled] = useState(false)
   const stompRef = useRef<any>(null)
   const subRef = useRef<any>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const selectedRoom = rooms.find((r) => r.chatRoomId === selectedRoomId)
+
+  // URL ?room= 지원: 채팅방 개설 후 이동 등
+  useEffect(() => {
+    const room = searchParams.get("room")
+    if (room) {
+      const n = parseInt(room, 10)
+      if (Number.isFinite(n)) setSelectedRoomId(n)
+    }
+  }, [searchParams])
 
   // 로그인 여부 및 내 정보
   useEffect(() => {
@@ -128,6 +158,11 @@ export default function ChatPage() {
     }
   }, [selectedRoomId, connectAndSubscribe])
 
+  // 메시지 목록 최하단으로 스크롤
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
+
   const handleSendMessage = async () => {
     const content = newMessage.trim()
     if (!content || selectedRoomId == null || !myNickname) return
@@ -192,10 +227,21 @@ export default function ChatPage() {
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{room.roomName}</div>
-                            <p className="text-xs text-muted-foreground truncate">
-                              게시글 #{room.postId}
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium truncate">{room.roomName}</span>
+                              <span className="text-xs text-muted-foreground shrink-0 ml-1">
+                                {formatRoomTime(room.createdAt)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {room.postTitle ?? `게시글 #${room.postId}`}
                             </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Users className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-xs text-muted-foreground">
+                                {room.participantCount ?? "—"}명
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </button>
@@ -207,7 +253,7 @@ export default function ChatPage() {
 
             {/* 채팅 영역 */}
             <Card className="lg:col-span-2 flex flex-col">
-              {selectedRoom && selectedRoomId != null ? (
+              {selectedRoomId != null ? (
                 <>
                   <CardHeader className="pb-3 border-b">
                     <div className="flex items-center gap-3">
@@ -221,20 +267,29 @@ export default function ChatPage() {
                       </Button>
                       <Avatar>
                         <AvatarFallback className="bg-primary/20 text-primary">
-                          {selectedRoom.roomName.slice(0, 2)}
+                          {(selectedRoom?.roomName ?? "채팅방").slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
-                        <h2 className="font-semibold">{selectedRoom.roomName}</h2>
-                        <a
-                          href={`/community/${selectedRoom.postId}`}
-                          className="text-xs text-muted-foreground hover:text-primary"
-                        >
-                          게시글 보기 #{selectedRoom.postId}
-                        </a>
+                      <div className="flex-1 min-w-0">
+                        <h2 className="font-semibold truncate">{selectedRoom?.roomName ?? "채팅방"}</h2>
+                        {selectedRoom ? (
+                          <Link
+                            href={`/community/${selectedRoom.postId}`}
+                            className="text-xs text-muted-foreground hover:text-primary truncate block"
+                          >
+                            게시글 보기
+                          </Link>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">로딩 중...</p>
+                        )}
                       </div>
+                      {selectedRoom && (selectedRoom.postTitle || selectedRoom.postId) && (
+                        <Badge variant="outline" className="text-xs shrink-0 max-w-[140px] truncate">
+                          {selectedRoom.postTitle ?? `#${selectedRoom.postId}`}
+                        </Badge>
+                      )}
                       {!wsConnected && (
-                        <span className="text-xs text-amber-600">실시간 연결 안 됨</span>
+                        <span className="text-xs text-amber-600 shrink-0">실시간 연결 안 됨</span>
                       )}
                     </div>
                   </CardHeader>
@@ -284,6 +339,7 @@ export default function ChatPage() {
                             </div>
                           )
                         })}
+                        <div ref={messagesEndRef} />
                       </div>
                     )}
                   </ScrollArea>

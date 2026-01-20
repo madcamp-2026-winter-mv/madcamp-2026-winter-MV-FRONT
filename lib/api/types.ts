@@ -169,7 +169,9 @@ export interface ChatRoomResponseDto {
   chatRoomId: number;
   roomName: string;
   postId: number;
+  postTitle?: string;
   createdAt: string;
+  participantCount?: number;
 }
 
 export interface Advertisement {
