@@ -19,7 +19,9 @@ import { Suspense } from "react"
 
 function formatTime(s: string) {
   try {
-    const d = new Date(s)
+    // 서버 LocalDateTime(타임존 없음)은 UTC로 저장된 경우가 있어, 없으면 'Z' 부여
+    const str = /Z|[-+]\d{2}:?\d{2}$/.test(s) ? s : s + "Z"
+    const d = new Date(str)
     return isNaN(d.getTime()) ? s : d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })
   } catch {
     return s
@@ -28,7 +30,8 @@ function formatTime(s: string) {
 
 function formatRoomTime(s: string) {
   try {
-    const d = new Date(s)
+    const str = /Z|[-+]\d{2}:?\d{2}$/.test(s) ? s : s + "Z"
+    const d = new Date(str)
     if (isNaN(d.getTime())) return s
     const now = new Date()
     const diff = now.getTime() - d.getTime()
@@ -317,7 +320,7 @@ function ChatContent() {
                     </div>
                   </CardHeader>
 
-                  <ScrollArea className="flex-1 p-4">
+                  <div className="flex-1 min-h-0 max-h-[50vh] overflow-y-auto p-4">
                     {messagesLoading ? (
                       <div className="py-8 text-center text-sm text-muted-foreground">메시지 로딩 중...</div>
                     ) : (
@@ -366,7 +369,7 @@ function ChatContent() {
                         <div ref={messagesEndRef} />
                       </div>
                     )}
-                  </ScrollArea>
+                  </div>
 
                   <div className="p-4 border-t">
                     <div className="flex gap-2">
