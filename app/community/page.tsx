@@ -19,6 +19,7 @@ export default function CommunityPage() {
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState("전체")
   const [listRefreshKey, setListRefreshKey] = useState(0)
+  const [categoriesRefreshKey, setCategoriesRefreshKey] = useState(0)
 
   const canWrite = selectedCategory !== "전체"
   const isPartyTab = selectedCategory === "팟모집"
@@ -47,7 +48,10 @@ export default function CommunityPage() {
             {/* 메인 콘텐츠 */}
             <div className="xl:col-span-3">
               <div className="flex items-center justify-between mb-4">
-                <CategoryTabs onCategoryChange={setSelectedCategory} />
+                <CategoryTabs
+                  onCategoryChange={setSelectedCategory}
+                  categoriesRefreshKey={categoriesRefreshKey}
+                />
                 <div className="flex items-center gap-2">
                   {canWrite && (
                     <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleWriteClick}>
@@ -62,7 +66,11 @@ export default function CommunityPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <CommunityList selectedCategory={selectedCategory} refreshKey={listRefreshKey} />
+                <CommunityList
+                  selectedCategory={selectedCategory}
+                  refreshKey={listRefreshKey}
+                  categoriesRefreshKey={categoriesRefreshKey}
+                />
               </div>
             </div>
 
@@ -83,7 +91,11 @@ export default function CommunityPage() {
         </main>
       </div>
 
-      <CreateCommunityModal open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} />
+      <CreateCommunityModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSuccess={() => setCategoriesRefreshKey((k) => k + 1)}
+      />
       <WritePostModal 
         open={isWriteModalOpen} 
         onOpenChange={setIsWriteModalOpen} 

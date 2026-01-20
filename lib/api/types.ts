@@ -63,7 +63,8 @@ export interface ScheduleRequestDto {
 
 export interface AuthorDto {
   nickname: string;
-  anonymous: boolean;
+  anonymous?: boolean;
+  isAnonymous?: boolean;
   imageUrl?: string;
 }
 
@@ -107,6 +108,8 @@ export interface PostResponseDto {
   author?: AuthorDto;
   partyInfo?: PartyInfoDto;
   voted?: boolean;
+  isVoted?: boolean;
+  isAuthor?: boolean;
 }
 
 export interface MemberResponseDto {

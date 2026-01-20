@@ -39,9 +39,10 @@ function formatTime(str?: string): string {
 interface CommunityListProps {
   selectedCategory?: string
   refreshKey?: number
+  categoriesRefreshKey?: number
 }
 
-export function CommunityList({ selectedCategory = "전체", refreshKey = 0 }: CommunityListProps) {
+export function CommunityList({ selectedCategory = "전체", refreshKey = 0, categoriesRefreshKey = 0 }: CommunityListProps) {
   const [posts, setPosts] = useState<PostResponseDto[]>([])
   const [categories, setCategories] = useState<CategoryDto[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,7 +52,7 @@ export function CommunityList({ selectedCategory = "전체", refreshKey = 0 }: C
 
   useEffect(() => {
     categoryApi.getAllCategories().then((list) => setCategories(Array.isArray(list) ? list : [])).catch(() => setCategories([]))
-  }, [])
+  }, [categoriesRefreshKey])
 
   useEffect(() => {
     let mounted = true
@@ -86,12 +87,13 @@ export function CommunityList({ selectedCategory = "전체", refreshKey = 0 }: C
   }, [selectedCategory, categories, refreshKey])
 
   const recruitingParties = posts.filter((p) => p.type === PostType.PARTY && p.partyInfo?.recruiting)
-  const filteredPosts = selectedCategory === "전체"
-    ? posts.filter((p) => p.type !== PostType.PARTY)
+  // 전체: 모든 글 표시(팟모집 포함). 카테고리별: 해당 카테고리 글만. 팟모집 탭은 PARTY만 표시(백엔드 보완).
+  const filteredPosts = isPartyTab
+    ? posts.filter((p) => p.type === PostType.PARTY)
     : posts
 
   const authorNick = (p: PostResponseDto) => p.author?.nickname || p.authorNickname || "—"
-  const isAnon = (p: PostResponseDto) => !!p.author?.anonymous
+  const isAnon = (p: PostResponseDto) => !!(p.author?.anonymous ?? (p.author as { isAnonymous?: boolean })?.isAnonymous)
   const catName = (p: PostResponseDto) => p.categoryName || "—"
   const timeStr = (p: PostResponseDto) => p.timeAgo || formatTime(p.createdAt)
 

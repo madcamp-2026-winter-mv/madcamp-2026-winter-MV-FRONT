@@ -26,9 +26,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { postApi, commentApi, memberApi, voteApi } from "@/lib/api/api"
+import { postApi, commentApi, memberApi, voteApi, partyApi } from "@/lib/api/api"
 import type { PostResponseDto, CommentResponseDto } from "@/lib/api/types"
 import { PostType } from "@/lib/api/types"
+import { toast } from "@/hooks/use-toast"
 
 function formatDate(s?: string) {
   if (!s) return "—"
@@ -56,10 +57,12 @@ export default function PostDetailPage() {
   const [editTitle, setEditTitle] = useState("")
   const [editContent, setEditContent] = useState("")
   const [editSubmitting, setEditSubmitting] = useState(false)
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<number[]>([])
+  const [confirmingParty, setConfirmingParty] = useState(false)
 
   const authorName = post?.author?.nickname || post?.authorNickname || "—"
-  const isAnonymous = !!post?.author?.anonymous
-  const isAuthor = !!(myNickname && (myNickname === authorName))
+  const isAnonymous = !!(post?.author?.anonymous ?? (post?.author as { isAnonymous?: boolean })?.isAnonymous)
+  const isAuthor = post?.isAuthor ?? !!(myNickname && myNickname === authorName)
   const comments: CommentResponseDto[] = post?.comments ?? []
   const likeCount = post?.likeCount ?? 0
   const isLiked = post?.liked ?? false
@@ -71,7 +74,7 @@ export default function PostDetailPage() {
   const isFull = maxCount > 0 && currentCount >= maxCount
   const voteOptions = post?.voteOptions ?? []
   const hasVote = voteOptions.length > 0
-  const hasVoted = post?.voted ?? false
+  const hasVoted = post?.voted ?? post?.isVoted ?? false
 
   const refetch = () => {
     if (!postId) return
@@ -161,6 +164,38 @@ export default function PostDetailPage() {
       refetch()
     } catch { /* ignore */ }
     finally { setEditSubmitting(false) }
+  }
+
+  // 익명이 아닌 댓글만 참가 후보 (memberId 있음). 글 작성자 본인 댓글 제외.
+  const eligibleComments = comments.filter(
+    (c) => c.memberId != null && c.authorNickname !== authorName
+  )
+  const toggleParticipant = (memberId: number) => {
+    setSelectedParticipantIds((prev) =>
+      prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]
+    )
+  }
+
+  const handleConfirmParty = async () => {
+    if (!postId || confirmingParty) return
+    const ids = [...new Set(selectedParticipantIds)]
+    if (ids.length === 0) {
+      toast({ title: "참가자를 한 명 이상 선택해 주세요.", variant: "destructive" })
+      return
+    }
+    setConfirmingParty(true)
+    try {
+      await partyApi.confirmParty(postId, ids)
+      toast({ title: "모집이 완료되었습니다. 채팅방에서 대화를 나눠보세요." })
+      setSelectedParticipantIds([])
+      refetch()
+      // TODO: 생성된 채팅방으로 deep link (/chat?room={chatRoomId})
+    } catch (e: unknown) {
+      const err = e as { message?: string; error?: string }
+      toast({ title: "채팅방 만들기 실패", description: err?.message || err?.error, variant: "destructive" })
+    } finally {
+      setConfirmingParty(false)
+    }
   }
 
   if (loading) {
@@ -383,6 +418,45 @@ export default function PostDetailPage() {
                       )}
                     </CardContent>
                   </Card>
+
+                  {isAuthor && isRecruiting && (
+                    <Card className="border-primary/30 bg-primary/5">
+                      <CardHeader className="pb-2">
+                        <h3 className="font-semibold text-sm">참가자 등록</h3>
+                        <p className="text-xs text-muted-foreground">댓글을 달린 사용자 중 참가할 멤버를 골라 채팅방을 만드세요.</p>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {eligibleComments.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">참가 후보가 없습니다. 댓글이 달리면 여기에 표시됩니다.</p>
+                        ) : (
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {eligibleComments.map((c) => (
+                              <div
+                                key={c.commentId}
+                                className="flex items-center gap-2 p-2 rounded border bg-background"
+                              >
+                                <Checkbox
+                                  id={`participant-${c.commentId}`}
+                                  checked={c.memberId != null && selectedParticipantIds.includes(c.memberId)}
+                                  onCheckedChange={() => c.memberId != null && toggleParticipant(c.memberId)}
+                                />
+                                <Label htmlFor={`participant-${c.commentId}`} className="flex-1 cursor-pointer text-sm">
+                                  {c.authorNickname}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <Button
+                          className="w-full"
+                          onClick={handleConfirmParty}
+                          disabled={selectedParticipantIds.length === 0 || confirmingParty}
+                        >
+                          {confirmingParty ? "생성 중..." : "채팅방 만들기"}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               )}
             </div>

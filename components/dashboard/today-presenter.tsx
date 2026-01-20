@@ -51,7 +51,7 @@ export function TodayPresenter({ roomId }: TodayPresenterProps) {
           <div className="flex flex-col items-center text-center">
             <p className="text-sm text-muted-foreground">오늘의 스크럼 진행자는</p>
             <p className="text-lg font-bold text-foreground mt-1">
-              {data.presenterNickname}
+              {data?.presenterNickname ?? ""}
               <span className="text-primary">님</span>입니다!
             </p>
           </div>

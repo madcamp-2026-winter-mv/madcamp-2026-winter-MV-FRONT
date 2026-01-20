@@ -13,43 +13,26 @@ import {
 import { categoryApi } from "@/lib/api/api"
 import type { CategoryDto } from "@/lib/api/types"
 
-const FALLBACK_CATEGORIES = [
-  { categoryId: 0, name: "자유", icon: "" },
-  { categoryId: 0, name: "질문", icon: "" },
-  { categoryId: 0, name: "팟모집", icon: "" },
-  { categoryId: 0, name: "정보공유", icon: "" },
-  { categoryId: 0, name: "채용공고", icon: "" },
-]
-
 interface CategoryTabsProps {
   onCategoryChange?: (category: string) => void
-  visibleCategories?: Record<string, boolean>
+  categoriesRefreshKey?: number
 }
 
-export function CategoryTabs({ onCategoryChange, visibleCategories }: CategoryTabsProps) {
-  const [activeCategory, setActiveCategory] = useState("all")
+export function CategoryTabs({ onCategoryChange, categoriesRefreshKey = 0 }: CategoryTabsProps) {
   const [activeCategoryLabel, setActiveCategoryLabel] = useState("전체")
   const [categories, setCategories] = useState<CategoryDto[]>([])
 
   useEffect(() => {
     categoryApi
       .getAllCategories()
-      .then((list) => setCategories(Array.isArray(list) && list.length > 0 ? list : FALLBACK_CATEGORIES))
-      .catch(() => setCategories(FALLBACK_CATEGORIES))
-  }, [])
+      .then((list) => setCategories(Array.isArray(list) ? list : []))
+      .catch(() => setCategories([]))
+  }, [categoriesRefreshKey])
 
-  const handleCategoryClick = (categoryId: string, categoryLabel: string) => {
-    setActiveCategory(categoryId)
-    setActiveCategoryLabel(categoryLabel)
-    onCategoryChange?.(categoryLabel)
+  const handleClick = (label: string) => {
+    setActiveCategoryLabel(label)
+    onCategoryChange?.(label)
   }
-
-  const displayList = categories.length > 0 ? categories : FALLBACK_CATEGORIES
-  const visibleTabs = displayList.filter((c) => {
-    if (c.name === "전체") return true
-    if (!visibleCategories) return true
-    return visibleCategories[c.name] !== false
-  })
 
   return (
     <div className="flex items-center gap-2">
@@ -65,18 +48,18 @@ export function CategoryTabs({ onCategoryChange, visibleCategories }: CategoryTa
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-48">
           <DropdownMenuItem
-            onClick={() => handleCategoryClick("all", "전체")}
-            className={cn("cursor-pointer", activeCategory === "all" && "bg-primary/10 text-primary font-medium")}
+            onClick={() => handleClick("전체")}
+            className={cn("cursor-pointer", activeCategoryLabel === "전체" && "bg-primary/10 text-primary font-medium")}
           >
             전체
           </DropdownMenuItem>
-          {visibleTabs.map((c) => (
+          {categories.map((c) => (
             <DropdownMenuItem
               key={c.categoryId}
-              onClick={() => handleCategoryClick(String(c.categoryId), c.name)}
+              onClick={() => handleClick(c.name)}
               className={cn(
                 "cursor-pointer",
-                activeCategory === String(c.categoryId) && "bg-primary/10 text-primary font-medium"
+                activeCategoryLabel === c.name && "bg-primary/10 text-primary font-medium"
               )}
             >
               {c.name}

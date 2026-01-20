@@ -5,72 +5,94 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Check, X } from "lucide-react"
+import { categoryApi } from "@/lib/api/api"
+import { toast } from "@/hooks/use-toast"
 
 interface CreateCommunityModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
-export function CreateCommunityModal({ open, onOpenChange }: CreateCommunityModalProps) {
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-  })
+export function CreateCommunityModal({ open, onOpenChange, onSuccess }: CreateCommunityModalProps) {
+  const [name, setName] = useState("")
   const [isDuplicateChecked, setIsDuplicateChecked] = useState(false)
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null)
+  const [checking, setChecking] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleDuplicateCheck = () => {
-    // Mock: 중복 확인 로직 (실제로는 서버에 요청)
-    const unavailableNames = ["테스트", "몰입캠프", "자유게시판"]
-    const available = !unavailableNames.includes(formData.title)
-    setIsAvailable(available)
-    setIsDuplicateChecked(true)
+  const handleDuplicateCheck = async () => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    setChecking(true)
+    setIsDuplicateChecked(false)
+    setIsAvailable(null)
+    try {
+      const res = await categoryApi.checkDuplicate(trimmed)
+      setIsAvailable(res.available)
+      setIsDuplicateChecked(true)
+    } catch {
+      toast({ title: "중복 확인 실패", description: "다시 시도해 주세요.", variant: "destructive" })
+    } finally {
+      setChecking(false)
+    }
   }
 
-  const handleTitleChange = (value: string) => {
-    setFormData({ ...formData, title: value })
+  const handleNameChange = (value: string) => {
+    setName(value)
     setIsDuplicateChecked(false)
     setIsAvailable(null)
   }
 
-  const handleSubmit = () => {
-    console.log("커뮤니티 생성:", formData)
-    onOpenChange(false)
-    setFormData({ title: "", description: "" })
-    setIsDuplicateChecked(false)
-    setIsAvailable(null)
+  const handleSubmit = async () => {
+    const trimmed = name.trim()
+    if (!trimmed || !isDuplicateChecked || !isAvailable) return
+    setSubmitting(true)
+    try {
+      await categoryApi.createCategory(trimmed)
+      toast({ title: "카테고리가 생성되었습니다." })
+      onOpenChange(false)
+      setName("")
+      setIsDuplicateChecked(false)
+      setIsAvailable(null)
+      onSuccess?.()
+    } catch (e: unknown) {
+      const err = e as { message?: string; error?: string }
+      toast({ title: "생성 실패", description: err?.message || err?.error || "다시 시도해 주세요.", variant: "destructive" })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-foreground">새 커뮤니티 생성</DialogTitle>
+          <DialogTitle className="text-foreground">새 커뮤니티 카테고리 생성</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="title" className="text-foreground">
-              커뮤니티 이름
+              카테고리 이름
             </Label>
             <div className="flex gap-2">
               <Input
                 id="title"
-                placeholder="커뮤니티 이름을 입력하세요"
-                value={formData.title}
-                onChange={(e) => handleTitleChange(e.target.value)}
+                placeholder="예: 정보공유, 질문"
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
                 className="bg-background border-border flex-1"
               />
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleDuplicateCheck}
-                disabled={!formData.title}
+                disabled={!name.trim() || checking}
                 className="bg-transparent shrink-0"
               >
-                중복확인
+                {checking ? "확인 중" : "중복확인"}
               </Button>
             </div>
             {isDuplicateChecked && (
@@ -89,19 +111,6 @@ export function CreateCommunityModal({ open, onOpenChange }: CreateCommunityModa
               </div>
             )}
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-foreground">
-              설명
-            </Label>
-            <Textarea
-              id="description"
-              placeholder="커뮤니티에 대한 설명을 입력하세요"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="bg-background border-border min-h-[100px]"
-            />
-          </div>
         </div>
 
         <DialogFooter>
@@ -111,9 +120,9 @@ export function CreateCommunityModal({ open, onOpenChange }: CreateCommunityModa
           <Button
             onClick={handleSubmit}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
-            disabled={!formData.title || !isDuplicateChecked || !isAvailable}
+            disabled={!name.trim() || !isDuplicateChecked || !isAvailable || submitting}
           >
-            생성하기
+            {submitting ? "생성 중..." : "생성하기"}
           </Button>
         </DialogFooter>
       </DialogContent>
