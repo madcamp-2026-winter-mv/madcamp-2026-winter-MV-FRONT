@@ -181,6 +181,8 @@ export interface ChatRoomResponseDto {
   roomName: string;
   postId: number;
   postTitle?: string;
+  /** 채팅방 개설자(방장) 프로필 이미지 URL. 대표 이미지용 */
+  creatorProfileImageUrl?: string | null;
   createdAt: string;
   participantCount?: number;
   /** 알람3: 해당 채팅방의 내 미읽음 메시지 개수 */
@@ -225,6 +227,8 @@ export interface Schedule {
 export interface CurrentPresenterResponse {
   presenterNickname?: string;
   presenterEmail?: string;
+  /** 스크럼 진행자 프로필 이미지 URL */
+  presenterProfileImageUrl?: string | null;
   message?: string;
 }
 

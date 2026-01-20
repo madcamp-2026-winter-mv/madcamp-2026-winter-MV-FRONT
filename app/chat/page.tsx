@@ -334,6 +334,9 @@ function ChatContent() {
                       >
                         <div className="flex items-start gap-3">
                           <Avatar className="shrink-0">
+                            {room.creatorProfileImageUrl ? (
+                              <AvatarImage src={room.creatorProfileImageUrl} alt="" />
+                            ) : null}
                             <AvatarFallback className="bg-primary/20 text-primary">
                               {room.roomName.slice(0, 2)}
                             </AvatarFallback>
@@ -385,6 +388,9 @@ function ChatContent() {
                         <ArrowLeft className="h-5 w-5" />
                       </Button>
                       <Avatar>
+                        {selectedRoom?.creatorProfileImageUrl ? (
+                          <AvatarImage src={selectedRoom.creatorProfileImageUrl} alt="" />
+                        ) : null}
                         <AvatarFallback className="bg-primary/20 text-primary">
                           {(selectedRoom?.roomName ?? "채팅방").slice(0, 2)}
                         </AvatarFallback>

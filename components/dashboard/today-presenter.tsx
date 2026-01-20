@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Mic2 } from "lucide-react"
 import { roomApi } from "@/lib/api/api"
 import type { CurrentPresenterResponse } from "@/lib/api/types"
@@ -32,10 +33,10 @@ export function TodayPresenter({ roomId }: TodayPresenterProps) {
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="pb-2 bg-linear-to-r from-primary/20 to-primary/5">
+      <CardHeader className="py-3 pr-4 pl-4 bg-gradient-to-r from-amber-500/20 to-amber-500/5 dark:from-amber-600/25 dark:to-amber-600/5">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <Mic2 className="h-4 w-4 text-primary" />
-          스크럼 진행자
+          <Mic2 className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span>스크럼 진행자</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-4">
@@ -49,6 +50,14 @@ export function TodayPresenter({ roomId }: TodayPresenterProps) {
           </div>
         ) : hasPresenter ? (
           <div className="flex flex-col items-center text-center">
+            <Avatar className="h-12 w-12 mb-3 shrink-0">
+              {data?.presenterProfileImageUrl ? (
+                <AvatarImage src={data.presenterProfileImageUrl} alt={data?.presenterNickname ?? ""} />
+              ) : null}
+              <AvatarFallback className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                {(data?.presenterNickname ?? "?").slice(0, 2)}
+              </AvatarFallback>
+            </Avatar>
             <p className="text-sm text-muted-foreground">오늘의 스크럼 진행자는</p>
             <p className="text-lg font-bold text-foreground mt-1">
               {data?.presenterNickname ?? ""}

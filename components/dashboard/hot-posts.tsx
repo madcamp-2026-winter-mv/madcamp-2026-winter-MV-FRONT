@@ -33,7 +33,7 @@ export function HotPosts() {
 
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Flame className="h-4 w-4 text-orange-500" />
@@ -44,7 +44,7 @@ export function HotPosts() {
           </Link>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-2">
         {loading && (
           <div className="space-y-2 py-4 text-center text-sm text-muted-foreground">로딩 중...</div>
         )}
