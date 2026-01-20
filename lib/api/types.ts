@@ -89,8 +89,9 @@ export interface CommentResponseDto {
   roomId?: number;
   /** 댓글 작성자 프로필 이미지 (익명이면 없음) */
   imageUrl?: string;
-  /** 현재 로그인 사용자 본인 댓글 여부 (이메일 기준, 익명 댓글도 수정/삭제 가능) */
+  /** 현재 로그인 사용자 본인 댓글 여부 (이메일 기준, 익명 댓글도 수정/삭제 가능). 서버가 mine으로 보낼 수 있어 둘 다 허용. */
   isMine?: boolean;
+  mine?: boolean;
 }
 
 export interface VoteResponse {

@@ -71,7 +71,7 @@ export default function PostDetailPage() {
 
   const authorName = post?.author?.nickname || post?.authorNickname || "—"
   const isAnonymous = !!(post?.author?.anonymous ?? (post?.author as { isAnonymous?: boolean })?.isAnonymous)
-  // 백엔드가 이메일로 작성자 여부를 판별해 isAuthor 반환. 익명 글도 수정/삭제 가능.
+  // 백엔드가 이메일로 작성자 여부를 판별해 isAuthor 반환. 익명 글도 작성자에게 수정/삭제 노출.
   const isAuthor = post?.isAuthor === true
   const comments: CommentResponseDto[] = post?.comments ?? []
   const likeCount = post?.likeCount ?? 0
@@ -488,7 +488,7 @@ export default function PostDetailPage() {
                                   <span className="text-xs text-muted-foreground">· {c.roomId} 분반</span>
                                 )}
                                 <span className="text-sm text-muted-foreground">{formatDate(c.createdAt)}</span>
-                                {c.isMine && editingCommentId !== c.commentId && (
+                                {(c.isMine === true || c.mine === true) && editingCommentId !== c.commentId && (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
