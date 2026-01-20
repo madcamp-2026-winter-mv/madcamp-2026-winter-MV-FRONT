@@ -88,9 +88,13 @@ export function CommunityList({ selectedCategory = "전체", refreshKey = 0, cat
 
   const recruitingParties = posts.filter((p) => p.type === PostType.PARTY && p.partyInfo?.recruiting)
   // 전체: 모든 글 표시(팟모집 포함). 카테고리별: 해당 카테고리 글만. 팟모집 탭은 PARTY만 표시(백엔드 보완).
-  const filteredPosts = isPartyTab
+  const filtered = isPartyTab
     ? posts.filter((p) => p.type === PostType.PARTY)
     : posts
+  // 최신 글 상단
+  const filteredPosts = [...filtered].sort(
+    (a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+  )
 
   const authorNick = (p: PostResponseDto) => p.author?.nickname || p.authorNickname || "—"
   const isAnon = (p: PostResponseDto) => !!(p.author?.anonymous ?? (p.author as { isAnonymous?: boolean })?.isAnonymous)
@@ -190,7 +194,7 @@ export function CommunityList({ selectedCategory = "전체", refreshKey = 0, cat
                           </div>
                           <div className="flex items-center gap-1.5 text-muted-foreground">
                             <MessageCircle className="h-4 w-4" />
-                            <span className="text-sm">{post.comments?.length ?? 0}</span>
+                            <span className="text-sm">{post.commentCount ?? post.comments?.length ?? 0}</span>
                           </div>
                           {post.type === PostType.PARTY && (post.partyInfo || (post.currentParticipants != null && post.maxParticipants != null)) && (
                             <div className="flex items-center gap-1.5 text-primary ml-auto">

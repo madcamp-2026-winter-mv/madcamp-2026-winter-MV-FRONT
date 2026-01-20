@@ -39,6 +39,7 @@ export interface PostRequestDto {
   type: PostType;
   maxParticipants?: number;
   voteContents?: string[];
+  isAnonymous?: boolean;
 }
 
 /** 글 작성 시 roomId, categoryId가 필수인 요청 (createPost 전용) */
@@ -81,6 +82,7 @@ export interface CommentResponseDto {
   content: string;
   authorNickname: string;
   createdAt: string; // ISO 8601 format
+  isAnonymous?: boolean;
 }
 
 export interface VoteResponse {
@@ -101,6 +103,7 @@ export interface PostResponseDto {
   currentParticipants?: number;
   maxParticipants?: number;
   comments?: CommentResponseDto[];
+  commentCount?: number;
   likeCount: number;
   liked: boolean;
   categoryName?: string;

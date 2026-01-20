@@ -270,12 +270,12 @@ export const voteApi = {
 export const commentApi = {
   /**
    * 댓글 작성. 인증 필요.
-   * POST /api/posts/{postId}/comments, body: { content: string }
+   * POST /api/posts/{postId}/comments, body: { content: string, anonymous?: boolean }
    */
-  createComment: (postId: number, content: string): Promise<CommentResponseDto> => {
+  createComment: (postId: number, content: string, anonymous?: boolean): Promise<CommentResponseDto> => {
     return apiRequest<CommentResponseDto>(`/api/posts/${postId}/comments`, {
       method: 'POST',
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, anonymous: !!anonymous }),
     });
   },
 };

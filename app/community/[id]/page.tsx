@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, Heart, MessageSquare, Share, MoreHorizontal, Send, Users, User } from "lucide-react"
+import { ArrowLeft, Heart, MessageSquare, MoreHorizontal, Send, Users, User } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
@@ -34,8 +34,10 @@ import { toast } from "@/hooks/use-toast"
 function formatDate(s?: string) {
   if (!s) return "—"
   try {
-    const d = new Date(s)
-    return isNaN(d.getTime()) ? s : d.toLocaleString("ko-KR")
+    // ISO에 Z/타임존 없으면 UTC로 간주 후 KST로 표시 (LocalDateTime 서버 저장 대응)
+    const str = /Z|[-+]\d{2}:?\d{2}$/.test(s) ? s : s + "Z"
+    const d = new Date(str)
+    return isNaN(d.getTime()) ? s : d.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })
   } catch { return s }
 }
 
@@ -51,6 +53,7 @@ export default function PostDetailPage() {
   const [error, setError] = useState<string | null>(null)
 
   const [newComment, setNewComment] = useState("")
+  const [commentAnonymous, setCommentAnonymous] = useState(false)
   const [commentSubmitting, setCommentSubmitting] = useState(false)
   const [selectedVoteOptions, setSelectedVoteOptions] = useState<number[]>([])
   const [editOpen, setEditOpen] = useState(false)
@@ -120,7 +123,7 @@ export default function PostDetailPage() {
     if (!content || !postId || commentSubmitting) return
     setCommentSubmitting(true)
     try {
-      await commentApi.createComment(postId, content)
+      await commentApi.createComment(postId, content, isParty ? undefined : commentAnonymous)
       setNewComment("")
       refetch()
     } catch { /* ignore */ }
@@ -151,8 +154,12 @@ export default function PostDetailPage() {
     if (!postId || !window.confirm("이 글을 삭제할까요?")) return
     try {
       await postApi.deletePost(postId)
+      toast({ title: "글이 삭제되었습니다." })
       router.push("/community")
-    } catch { /* ignore */ }
+    } catch (e: unknown) {
+      const err = e as { message?: string }
+      toast({ title: "삭제 실패", description: err?.message, variant: "destructive" })
+    }
   }
 
   const handleEditSave = async () => {
@@ -166,9 +173,9 @@ export default function PostDetailPage() {
     finally { setEditSubmitting(false) }
   }
 
-  // 익명이 아닌 댓글만 참가 후보 (memberId 있음). 글 작성자 본인 댓글 제외.
+  // 익명이 아닌 댓글만 참가 후보 (memberId 있음, 글 작성자 제외). 팟모집 작성자용.
   const eligibleComments = comments.filter(
-    (c) => c.memberId != null && c.authorNickname !== authorName
+    (c) => c.memberId != null && !c.isAnonymous && c.authorNickname !== authorName
   )
   const toggleParticipant = (memberId: number) => {
     setSelectedParticipantIds((prev) =>
@@ -314,16 +321,19 @@ export default function PostDetailPage() {
                             </>
                           ) : (
                             <div className="space-y-3">
-                              {voteOptions.map((opt) => (
-                                <div key={opt.optionId} className="space-y-1">
-                                  <div className="flex justify-between text-sm">
-                                    <span>{opt.content}</span>
-                                    <span className="font-medium">{opt.percentage != null ? Math.round(opt.percentage) : 0}%</span>
+                              {voteOptions.map((opt) => {
+                                const pct = totalVotes > 0 ? ((opt.count ?? 0) / totalVotes) * 100 : 0
+                                return (
+                                  <div key={opt.optionId} className="space-y-1">
+                                    <div className="flex justify-between text-sm">
+                                      <span>{opt.content}</span>
+                                      <span className="font-medium">{Math.round(opt.percentage ?? pct)}%</span>
+                                    </div>
+                                    <Progress value={opt.percentage ?? pct} className="h-2" />
+                                    <p className="text-xs text-muted-foreground">{opt.count ?? 0}표</p>
                                   </div>
-                                  <Progress value={opt.percentage ?? 0} className="h-2" />
-                                  <p className="text-xs text-muted-foreground">{opt.count ?? 0}표</p>
-                                </div>
-                              ))}
+                                )
+                              })}
                               <p className="text-sm text-center text-muted-foreground pt-2">총 {totalVotes}명 참여</p>
                             </div>
                           )}
@@ -341,7 +351,6 @@ export default function PostDetailPage() {
                         <MessageSquare className="h-5 w-5" />
                         {comments.length}
                       </Button>
-                      <Button variant="ghost" className="gap-2"><Share className="h-5 w-5" />공유</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -350,6 +359,16 @@ export default function PostDetailPage() {
                   <CardHeader><h3 className="font-semibold">댓글 {comments.length}개</h3></CardHeader>
                   <CardContent className="space-y-4">
                     <form onSubmit={handleSubmitComment} className="space-y-3">
+                      {!isParty && (
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="comment-anonymous"
+                            checked={commentAnonymous}
+                            onCheckedChange={(v) => setCommentAnonymous(!!v)}
+                          />
+                          <Label htmlFor="comment-anonymous" className="text-sm cursor-pointer">익명으로 작성</Label>
+                        </div>
+                      )}
                       <div className="flex gap-3">
                         <Avatar>
                           <AvatarFallback className="bg-primary text-primary-foreground">{String(myNickname || "").slice(-2)}</AvatarFallback>
@@ -373,11 +392,11 @@ export default function PostDetailPage() {
                       {comments.map((c) => (
                         <div key={c.commentId} className="flex gap-3 p-3 rounded-lg">
                           <Avatar>
-                            <AvatarFallback className="bg-muted">{String(c.authorNickname || "").slice(-2)}</AvatarFallback>
+                            <AvatarFallback className="bg-muted">{c.isAnonymous ? "?" : String(c.authorNickname || "").slice(-2)}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold">{c.authorNickname}</span>
+                              <span className="font-semibold">{c.isAnonymous ? "익명" : c.authorNickname}</span>
                               <span className="text-sm text-muted-foreground">{formatDate(c.createdAt)}</span>
                             </div>
                             <p className="mt-1 text-foreground">{c.content}</p>

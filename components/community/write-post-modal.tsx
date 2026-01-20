@@ -39,8 +39,6 @@ export function WritePostModal({ open, onOpenChange, category: initialCategory, 
   const [hasVote, setHasVote] = useState(false)
   const [voteTitle, setVoteTitle] = useState("")
   const [voteOptions, setVoteOptions] = useState(["", ""])
-  const [allowMultipleVotes, setAllowMultipleVotes] = useState(false)
-
   const [roomId, setRoomId] = useState<number | null>(null)
   const [categories, setCategories] = useState<CategoryDto[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -82,6 +80,7 @@ export function WritePostModal({ open, onOpenChange, category: initialCategory, 
       type,
       maxParticipants: isPartyPost ? maxParticipants : undefined,
       voteContents: hasVote ? voteOptions.filter(Boolean) : undefined,
+      isAnonymous: !isPartyPost && authorType === "anonymous",
     }
 
     try {
@@ -105,7 +104,6 @@ export function WritePostModal({ open, onOpenChange, category: initialCategory, 
     setHasVote(false)
     setVoteTitle("")
     setVoteOptions(["", ""])
-    setAllowMultipleVotes(false)
   }
 
   const handleAddVoteOption = () => {
@@ -281,17 +279,6 @@ export function WritePostModal({ open, onOpenChange, category: initialCategory, 
                       항목 추가
                     </Button>
                   )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="modal-multipleVotes"
-                    checked={allowMultipleVotes}
-                    onCheckedChange={(checked) => setAllowMultipleVotes(checked as boolean)}
-                  />
-                  <Label htmlFor="modal-multipleVotes" className="cursor-pointer text-sm">
-                    복수 선택 허용
-                  </Label>
                 </div>
               </div>
             )}
