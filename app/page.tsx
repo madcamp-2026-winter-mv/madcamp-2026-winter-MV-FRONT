@@ -28,9 +28,7 @@ export default function HomePage() {
       {/* 중앙 안내 섹션 */}
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm">
         <div className="max-w-md text-center space-y-6 p-8 bg-card border rounded-2xl shadow-xl">
-          <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-xl bg-primary text-2xl font-bold text-primary-foreground">
-            몰
-          </div>
+          <img src="/madcamp_logo.png" alt="몰입캠프" className="h-16 w-16 mx-auto object-contain" />
           <h1 className="text-3xl font-bold">몰 봐 (Madcamp View)</h1>
           <p className="text-muted-foreground">
             몰입캠프 생활을 한눈에 확인하세요.<br />

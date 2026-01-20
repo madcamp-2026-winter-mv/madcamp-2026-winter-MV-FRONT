@@ -39,9 +39,7 @@ export function DesktopSidebar() {
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground">
-            몰
-          </div>
+          <img src="/madcamp_logo.png" alt="몰입캠프" className="h-10 w-10 object-contain shrink-0" />
           <div>
             <h1 className="text-lg font-bold">몰 봐</h1>
             <p className="text-xs text-sidebar-foreground/60">Madcamp View</p>

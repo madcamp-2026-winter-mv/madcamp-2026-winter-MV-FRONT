@@ -334,9 +334,13 @@ function ChatContent() {
                             >
                               {!isMe && (
                                 <Avatar className="h-8 w-8 shrink-0">
-                                  {msg.senderProfileImageUrl && <AvatarImage src={msg.senderProfileImageUrl} alt="" />}
+                                  {msg.senderNickname === "몰입캠프" ? (
+                                    <AvatarImage src="/madcamp_logo.png" alt="몰입캠프" />
+                                  ) : msg.senderProfileImageUrl ? (
+                                    <AvatarImage src={msg.senderProfileImageUrl} alt="" />
+                                  ) : null}
                                   <AvatarFallback className="bg-muted text-xs">
-                                    {String(msg.senderNickname).slice(-2)}
+                                    {msg.senderNickname === "몰입캠프" ? "몰입" : String(msg.senderNickname).slice(-2)}
                                   </AvatarFallback>
                                 </Avatar>
                               )}

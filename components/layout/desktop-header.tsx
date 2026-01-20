@@ -1,13 +1,15 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect, useState } from "react"
 import { Bell, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/hooks/use-auth"
-import type { MemberResponseDto } from "@/lib/api/types"
+import { notificationApi } from "@/lib/api/api"
+import { usePathname } from "next/navigation"
 
 interface DesktopHeaderProps {
   title: string
@@ -15,6 +17,12 @@ interface DesktopHeaderProps {
 
 export function DesktopHeader({ title }: DesktopHeaderProps) {
   const { user, logout } = useAuth()
+  const pathname = usePathname()
+  const [headerUnread, setHeaderUnread] = useState(0)
+
+  useEffect(() => {
+    notificationApi.getSidebarUnreadCount().then(setHeaderUnread).catch(() => setHeaderUnread(0))
+  }, [pathname])
 
   const handleLogout = async () => {
     await logout()
@@ -34,10 +42,15 @@ export function DesktopHeader({ title }: DesktopHeaderProps) {
         </div>
 
         {/* Notifications */}
-        <Link href="/notifications">
+        <Link href="/notifications" className="relative">
           <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
           </Button>
+          {headerUnread > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-medium text-destructive-foreground">
+              {headerUnread > 99 ? "99+" : headerUnread}
+            </span>
+          )}
         </Link>
 
         {/* User Avatar */}

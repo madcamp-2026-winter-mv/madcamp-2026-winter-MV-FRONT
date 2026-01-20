@@ -58,9 +58,7 @@ export default function LoginPage() {
       {/* 왼쪽: 브랜딩 영역 */}
       <div className="hidden lg:flex lg:flex-1 bg-foreground items-center justify-center p-12">
         <div className="max-w-md text-center space-y-6">
-          <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-2xl bg-primary text-3xl font-bold text-primary-foreground">
-            몰
-          </div>
+          <img src="/madcamp_logo.png" alt="몰입캠프" className="h-20 w-20 mx-auto object-contain" />
           <h1 className="text-4xl font-bold text-background">몰 봐</h1>
           <p className="text-lg text-background/60">Madcamp View</p>
           <p className="text-background/80 leading-relaxed">
@@ -76,9 +74,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-8">
           {/* 모바일용 로고 */}
           <div className="text-center lg:hidden space-y-2">
-            <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-xl bg-primary text-2xl font-bold text-primary-foreground">
-              몰
-            </div>
+            <img src="/madcamp_logo.png" alt="몰입캠프" className="h-16 w-16 mx-auto object-contain" />
             <h1 className="text-3xl font-bold text-foreground">몰 봐</h1>
             <p className="text-sm text-muted-foreground">Madcamp View</p>
           </div>

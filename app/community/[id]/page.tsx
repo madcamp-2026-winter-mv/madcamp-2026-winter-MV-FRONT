@@ -572,6 +572,17 @@ export default function PostDetailPage() {
                             </div>
                           )
                         })}
+                        {/* 모집 완료 시: 채팅방 멤버 중 글쓴이 제외 — 모두에게 노출 */}
+                        {!isRecruiting && (post?.chatParticipants?.length ?? 0) > 0 && post.chatParticipants!.map((p, idx) => (
+                          <div key={`cp-${idx}`} className="flex items-center gap-3 p-2 rounded-lg bg-primary/10 border border-primary/30">
+                            <Avatar className="h-8 w-8 shrink-0">
+                              {p.imageUrl && <AvatarImage src={p.imageUrl} alt="" />}
+                              <AvatarFallback className="bg-primary/20 text-primary text-xs">{String(p.nickname || "").slice(-2)}</AvatarFallback>
+                            </Avatar>
+                            <span className="flex-1 text-sm font-medium">{p.nickname}</span>
+                            <Badge className="bg-primary text-primary-foreground text-xs">참가자</Badge>
+                          </div>
+                        ))}
                         {/* 빈 슬롯 (모집중일 때, 작성자/방문자 동일한 기준) */}
                         {isRecruiting && Array.from({ length: Math.max(0, maxCount - 1 - selectedParticipantIds.length) }).map((_, i) => (
                           <div key={`empty-${i}`} className="flex items-center gap-3 p-2 rounded-lg border border-dashed border-border">
