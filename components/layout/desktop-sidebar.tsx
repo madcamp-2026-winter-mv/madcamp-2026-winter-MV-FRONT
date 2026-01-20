@@ -45,7 +45,7 @@ export function DesktopSidebar() {
         <div className="border-b border-sidebar-border p-4">
           <div className="rounded-lg bg-sidebar-accent p-3">
             <p className="text-xs text-sidebar-foreground/60">현재 분반</p>
-            <p className="font-semibold text-sidebar-primary">{user?.roomName ?? user?.roomId ?? "—"}</p>
+            <p className="font-semibold text-sidebar-primary">{user?.roomId ?? "—"} 분반</p>
           </div>
         </div>
 

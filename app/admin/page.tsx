@@ -29,8 +29,12 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const [isAttendanceActive, setIsAttendanceActive] = useState(false)
   const [attendanceMinutes, setAttendanceMinutes] = useState(5)
+  const [attendanceEndTime, setAttendanceEndTime] = useState<number | null>(null)
+  const [attendanceRemainingSeconds, setAttendanceRemainingSeconds] = useState(0)
+
+  const ATTENDANCE_STORAGE_KEY = (rid: number) => `admin_attendance_end_${rid}`
+  const isAttendanceActive = attendanceEndTime != null
   const [inviteCode, setInviteCode] = useState("")
   const [inviteCodeLoading, setInviteCodeLoading] = useState(false)
   const [selectedPresenter, setSelectedPresenter] = useState<MemberResponseDto | null>(null)
@@ -93,6 +97,39 @@ export default function AdminPage() {
     if (roomId) refetchAttendance()
   }, [roomId, refetchAttendance])
 
+  // 출석 종료 시각 복원 (새로고침·다른 탭 다녀와도 유지)
+  useEffect(() => {
+    if (!roomId) return
+    try {
+      const raw = localStorage.getItem(ATTENDANCE_STORAGE_KEY(roomId))
+      if (raw) {
+        const et = Number(raw)
+        if (et > Date.now()) {
+          setAttendanceEndTime(et)
+          setAttendanceRemainingSeconds(Math.max(0, Math.ceil((et - Date.now()) / 1000)))
+        } else {
+          localStorage.removeItem(ATTENDANCE_STORAGE_KEY(roomId))
+        }
+      }
+    } catch (_) {}
+  }, [roomId])
+
+  // 출석 남은 시간 카운트다운 (1초마다)
+  useEffect(() => {
+    if (!attendanceEndTime || !roomId) return
+    const key = ATTENDANCE_STORAGE_KEY(roomId)
+    const id = setInterval(() => {
+      const rem = Math.max(0, Math.ceil((attendanceEndTime - Date.now()) / 1000))
+      setAttendanceRemainingSeconds(rem)
+      if (rem <= 0) {
+        setAttendanceEndTime(null)
+        setAttendanceRemainingSeconds(0)
+        localStorage.removeItem(key)
+      }
+    }, 1000)
+    return () => clearInterval(id)
+  }, [attendanceEndTime, roomId])
+
   const handleCopyCode = () => {
     if (inviteCode) navigator.clipboard.writeText(inviteCode)
   }
@@ -114,8 +151,10 @@ export default function AdminPage() {
     if (!roomId) return
     try {
       await adminApi.startAttendance(roomId, attendanceMinutes)
-      setIsAttendanceActive(true)
-      setTimeout(() => setIsAttendanceActive(false), attendanceMinutes * 60 * 1000)
+      const endTime = Date.now() + attendanceMinutes * 60 * 1000
+      localStorage.setItem(ATTENDANCE_STORAGE_KEY(roomId), String(endTime))
+      setAttendanceEndTime(endTime)
+      setAttendanceRemainingSeconds(attendanceMinutes * 60)
       await refetchAttendance()
     } catch (e: any) {
       setError(e?.message ?? e?.error ?? "출석 시작에 실패했습니다.")
@@ -177,6 +216,9 @@ export default function AdminPage() {
     ? Math.round(attendanceList.reduce((a, b) => a + (b.attendanceRate ?? 0), 0) / attendanceList.length)
     : 0
 
+  // 인원 관리: role=ADMIN 제외 (쓰레기통으로 kickMember 연동)
+  const membersForManagement = attendanceList.filter((m) => m.role !== "ADMIN")
+
   if (loading && !member) {
     return (
       <div className="min-h-screen bg-background">
@@ -202,6 +244,27 @@ export default function AdminPage() {
               <CardContent className="pt-6">
                 <p className="text-muted-foreground">
                   분반에 가입된 관리자만 이 페이지를 사용할 수 있습니다. 마이페이지에서 초대 코드로 분반에 가입해주세요.
+                </p>
+              </CardContent>
+            </Card>
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  // role=ADMIN 또는 OWNER만 접근 허용
+  if (!member || (member.role !== "ADMIN" && member.role !== "OWNER")) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DesktopSidebar />
+        <div className="ml-64">
+          <DesktopHeader title="관리자" />
+          <main className="p-6">
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-muted-foreground">
+                  관리자(ADMIN) 권한이 있는 회원만 이 페이지를 이용할 수 있습니다.
                 </p>
               </CardContent>
             </Card>
@@ -303,7 +366,8 @@ export default function AdminPage() {
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
                             <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500"></span>
                           </span>
-                          출석 진행중 ({attendanceMinutes}분)
+                          출석 진행중 (남은 시간{" "}
+                          {`${Math.floor(attendanceRemainingSeconds / 60)}:${String(attendanceRemainingSeconds % 60).padStart(2, "0")}`})
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 text-muted-foreground">
@@ -466,7 +530,7 @@ export default function AdminPage() {
                       <CardDescription>분반 멤버를 관리합니다</CardDescription>
                     </div>
                     <Badge variant="outline" className="gap-1">
-                      <Users className="h-3 w-3" />총 {attendanceList.length}명
+                      <Users className="h-3 w-3" />총 {membersForManagement.length}명
                     </Badge>
                   </div>
                 </CardHeader>
@@ -484,7 +548,7 @@ export default function AdminPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {attendanceList.map((m) => (
+                        {membersForManagement.map((m) => (
                           <TableRow key={m.email}>
                             <TableCell className="font-medium">{m.realName || m.nickname}</TableCell>
                             <TableCell>{m.email}</TableCell>
