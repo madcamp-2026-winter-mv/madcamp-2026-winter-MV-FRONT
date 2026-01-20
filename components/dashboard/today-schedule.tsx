@@ -120,24 +120,27 @@ export function TodaySchedule({ roomId }: TodayScheduleProps) {
         <div className="space-y-3">
           {schedules.map((s) => {
             const dDay = formatTimeAgo(s.startTime)
-            const isUpcoming = dDay != null
             const isImportant = !!(s.important ?? s.isImportant)
+            // 1시간 이내 = "n분 뒤" 형태만 (diffM < 60)
+            const withinOneHour = dDay != null && /^\d+분 뒤$/.test(dDay)
+            // 1시간 이내 일반: 연한 노란 하이라이트 + n분 뒤 뱃지. 1시간 이전 일반: mockup처럼 bg-muted/50만. 중요: 지금처럼(amber 좌측+Star+뱃지)
+            const bgClass = isImportant
+              ? "bg-muted/50"
+              : withinOneHour
+                ? "bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200/60 dark:border-yellow-800/50"
+                : "bg-muted/50"
+            const blockClass = `flex items-start gap-3 rounded-lg p-3 transition-colors ${bgClass} ${isImportant ? "border-l-4 border-amber-500" : ""}`
             return (
-              <div
-                key={s.scheduleId}
-                className={`flex items-start gap-3 rounded-lg p-3 transition-colors ${
-                  isUpcoming ? "bg-primary/10 border border-primary/20" : "bg-muted/50"
-                } ${isImportant ? "border-l-4 border-amber-500" : ""}`}
-              >
+              <div key={s.scheduleId} className={blockClass}>
                 <div
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                    isImportant ? "bg-amber-100 dark:bg-amber-900/40" : "bg-primary/20"
+                    isImportant ? "bg-amber-100 dark:bg-amber-900/40" : "bg-muted/50"
                   }`}
                 >
                   {isImportant ? (
                     <Star className="h-5 w-5 text-amber-600 dark:text-amber-400 fill-amber-600 dark:fill-amber-400" />
                   ) : (
-                    <Clock className="h-5 w-5 text-primary" />
+                    <Clock className="h-5 w-5 text-muted-foreground" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -148,8 +151,11 @@ export function TodaySchedule({ roomId }: TodayScheduleProps) {
                     {isImportant && (
                       <Badge className="bg-amber-500/90 text-amber-950 text-xs hover:bg-amber-500/90">중요</Badge>
                     )}
-                    {isUpcoming && dDay && (
-                      <Badge className="bg-primary text-primary-foreground text-xs">{dDay}</Badge>
+                    {withinOneHour && dDay && !isImportant && (
+                      <Badge className="bg-yellow-400/80 text-yellow-950 text-xs">{dDay}</Badge>
+                    )}
+                    {isImportant && dDay && (
+                      <Badge className="bg-amber-500/90 text-amber-950 text-xs">{dDay}</Badge>
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">

@@ -50,12 +50,12 @@ export default function DashboardPage() {
         <DesktopHeader title="대시보드" />
 
         <main className="p-6">
-          {/* 상단 영역: 출석 + 일정 */}
+          {/* 상단 영역: 출석 + 일정 (출석 1/3, 일정 2/3) */}
           <div className="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-            <div className="xl:col-span-2">
+            <div className="xl:col-span-1">
               <AttendanceWidget roomId={myInfo?.roomId} />
             </div>
-            <div>
+            <div className="xl:col-span-2">
               <TodaySchedule roomId={myInfo?.roomId} />
             </div>
           </div>
