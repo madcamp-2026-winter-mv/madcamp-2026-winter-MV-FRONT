@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
-import Link from "next/link"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -397,14 +396,7 @@ function ChatContent() {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <h2 className="font-semibold truncate">{selectedRoom?.roomName ?? "채팅방"}</h2>
-                        {selectedRoom ? (
-                          <Link
-                            href={`/community/${selectedRoom.postId}`}
-                            className="text-xs text-muted-foreground hover:text-primary truncate block"
-                          >
-                            게시글 보기
-                          </Link>
-                        ) : (
+                        {!selectedRoom && (
                           <p className="text-xs text-muted-foreground">로딩 중...</p>
                         )}
                       </div>
