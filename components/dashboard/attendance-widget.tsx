@@ -3,15 +3,17 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { CheckCircle2, UserCheck, Sparkles } from "lucide-react"
 import { roomApi } from "@/lib/api/api"
 import { toast } from "@/hooks/use-toast"
 
 interface AttendanceWidgetProps {
   roomId?: number
+  profileImage?: string
 }
 
-export function AttendanceWidget({ roomId }: AttendanceWidgetProps) {
+export function AttendanceWidget({ roomId, profileImage }: AttendanceWidgetProps) {
   const [hasCheckedIn, setHasCheckedIn] = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
 
@@ -73,8 +75,15 @@ export function AttendanceWidget({ roomId }: AttendanceWidgetProps) {
         {hasCheckedIn ? (
           <div className="flex-1 flex flex-col items-center justify-center py-4">
             <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4 ring-4 ring-emerald-50 dark:ring-emerald-900/20">
-                <CheckCircle2 className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4 ring-4 ring-emerald-50 dark:ring-emerald-900/20 overflow-hidden">
+                {profileImage ? (
+                  <Avatar className="w-20 h-20">
+                    <AvatarImage src={profileImage} alt="" />
+                    <AvatarFallback className="bg-emerald-100 text-emerald-600"><CheckCircle2 className="h-10 w-10" /></AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <CheckCircle2 className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
+                )}
               </div>
               <div className="absolute -top-1 -right-1">
                 <Sparkles className="h-5 w-5 text-amber-500 animate-pulse" />
@@ -92,16 +101,20 @@ export function AttendanceWidget({ roomId }: AttendanceWidgetProps) {
             {/* 상단 일러스트 영역 */}
             <div className="flex-1 flex flex-col items-center justify-center py-4">
               <div className="relative mb-4">
-                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center ring-4 ring-primary/5">
-                  <UserCheck className="h-10 w-10 text-primary/70" />
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center ring-4 ring-primary/5 overflow-hidden">
+                  {profileImage ? (
+                    <Avatar className="w-20 h-20">
+                      <AvatarImage src={profileImage} alt="" />
+                      <AvatarFallback className="bg-primary/10 text-primary"><UserCheck className="h-10 w-10" /></AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <UserCheck className="h-10 w-10 text-primary/70" />
+                  )}
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
                   <span className="text-xs">👋</span>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground text-center">
-                아직 출석하지 않았어요
-              </p>
             </div>
             
             {/* 하단 버튼 영역 */}

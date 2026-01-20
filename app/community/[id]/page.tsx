@@ -9,7 +9,7 @@ import { DesktopHeader } from "@/components/layout/desktop-header"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -49,6 +49,7 @@ export default function PostDetailPage() {
 
   const [post, setPost] = useState<PostResponseDto | null>(null)
   const [myNickname, setMyNickname] = useState<string | null>(null)
+  const [myProfileImage, setMyProfileImage] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -103,6 +104,7 @@ export default function PostDetailPage() {
         if (mounted) {
           setPost(p)
           setMyNickname(m.nickname)
+          setMyProfileImage(m.profileImage ?? null)
           setEditTitle(p.title)
           setEditContent(p.content)
           setSelectedParticipantIds(Array.isArray(p.tempParticipantIds) ? p.tempParticipantIds : [])
@@ -268,7 +270,10 @@ export default function PostDetailPage() {
                           {isAnonymous ? (
                             <AvatarFallback className="bg-muted"><User className="h-4 w-4 text-muted-foreground" /></AvatarFallback>
                           ) : (
-                            <AvatarFallback className="bg-primary text-primary-foreground">{String(authorName).slice(-2)}</AvatarFallback>
+                            <>
+                              {post?.author?.imageUrl && <AvatarImage src={post.author.imageUrl} alt="" />}
+                              <AvatarFallback className="bg-primary text-primary-foreground">{String(authorName).slice(-2)}</AvatarFallback>
+                            </>
                           )}
                         </Avatar>
                         <div>
@@ -387,6 +392,7 @@ export default function PostDetailPage() {
                       )}
                       <div className="flex gap-3">
                         <Avatar>
+                          {myProfileImage && <AvatarImage src={myProfileImage} alt="" />}
                           <AvatarFallback className="bg-primary text-primary-foreground">{String(myNickname || "").slice(-2)}</AvatarFallback>
                         </Avatar>
                         <div className="flex flex-1 gap-2">
@@ -431,6 +437,7 @@ export default function PostDetailPage() {
                               <div className="w-9 shrink-0" />
                             ) : null}
                             <Avatar className="shrink-0">
+                              {!c.isAnonymous && c.imageUrl && <AvatarImage src={c.imageUrl} alt="" />}
                               <AvatarFallback className={isSelected ? "bg-primary text-primary-foreground" : "bg-muted"}>
                                 {c.isAnonymous ? "?" : String(c.authorNickname || "").slice(-2)}
                               </AvatarFallback>
@@ -473,6 +480,7 @@ export default function PostDetailPage() {
                       <div className="space-y-2">
                         <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
                           <Avatar className="h-8 w-8 shrink-0">
+                            {!isAnonymous && post?.author?.imageUrl && <AvatarImage src={post.author.imageUrl} alt="" />}
                             <AvatarFallback className="bg-primary/20 text-primary text-xs">{String(authorName).slice(-2)}</AvatarFallback>
                           </Avatar>
                           <span className="flex-1 text-sm font-medium">{authorName}</span>
@@ -484,6 +492,7 @@ export default function PostDetailPage() {
                           return (
                             <div key={mid} className="flex items-center gap-3 p-2 rounded-lg bg-primary/10 border border-primary/30">
                               <Avatar className="h-8 w-8 shrink-0">
+                                {c?.imageUrl && <AvatarImage src={c.imageUrl} alt="" />}
                                 <AvatarFallback className="bg-primary/20 text-primary text-xs">{String(nick).slice(-2)}</AvatarFallback>
                               </Avatar>
                               <span className="flex-1 text-sm font-medium">{nick}</span>

@@ -87,6 +87,8 @@ export interface CommentResponseDto {
   isAnonymous?: boolean;
   /** 댓글 작성자 분반 ID. 익명이면 없음. 표시: "{roomId} 분반" */
   roomId?: number;
+  /** 댓글 작성자 프로필 이미지 (익명이면 없음) */
+  imageUrl?: string;
 }
 
 export interface VoteResponse {

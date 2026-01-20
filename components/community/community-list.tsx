@@ -157,7 +157,7 @@ export function CommunityList({ selectedCategory = "전체", refreshKey = 0, cat
                           <AvatarFallback className="bg-muted text-muted-foreground text-xs">익명</AvatarFallback>
                         ) : (
                           <>
-                            <AvatarImage src={post.author?.imageUrl || "/placeholder.svg"} />
+                            {post.author?.imageUrl && <AvatarImage src={post.author.imageUrl} alt="" />}
                             <AvatarFallback className="bg-primary/20 text-primary text-xs">
                               {String(authorNick(post)).slice(-2)}
                             </AvatarFallback>
