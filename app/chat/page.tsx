@@ -11,10 +11,24 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { Send, Users, ArrowLeft, MessageCircle } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Send, Users, ArrowLeft, MessageCircle, MoreVertical, LogOut, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { chatApi, getChatWsUrl, memberApi, partyApi } from "@/lib/api/api"
-import type { ChatRoomResponseDto, ChatMessageDto } from "@/lib/api/types"
+import type { ChatRoomResponseDto, ChatMessageDto, ChatMemberResponseDto } from "@/lib/api/types"
 import { Suspense } from "react"
 
 function formatTime(s: string) {
@@ -51,16 +65,24 @@ function ChatContent() {
   const [messages, setMessages] = useState<ChatMessageDto[]>([])
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
   const [myNickname, setMyNickname] = useState<string | null>(null)
+  const [myMemberId, setMyMemberId] = useState<number | null>(null)
   const [newMessage, setNewMessage] = useState("")
   const [roomsLoading, setRoomsLoading] = useState(true)
   const [messagesLoading, setMessagesLoading] = useState(false)
   const [wsConnected, setWsConnected] = useState(false)
   const [sendDisabled, setSendDisabled] = useState(false)
+  const [chatMembers, setChatMembers] = useState<ChatMemberResponseDto[]>([])
+  const [membersOpen, setMembersOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
+  const [kickTarget, setKickTarget] = useState<ChatMemberResponseDto | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
   const stompRef = useRef<any>(null)
   const subRef = useRef<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const selectedRoom = rooms.find((r) => r.chatRoomId === selectedRoomId)
+  const isOwner = chatMembers.find((m) => m.memberId === myMemberId)?.isOwner ?? false
 
   // URL ?room= 지원: 채팅방 개설 후 이동 등
   useEffect(() => {
@@ -76,12 +98,24 @@ function ChatContent() {
     let mounted = true
     memberApi
       .getMyInfo()
-      .then((m) => { if (mounted) setMyNickname(m.nickname) })
+      .then((m) => {
+        if (mounted) {
+          setMyNickname(m.nickname)
+          setMyMemberId(m.memberId ?? null)
+        }
+      })
       .catch(() => {})
     return () => { mounted = false }
   }, [])
 
   // 채팅방 목록
+  const refetchRooms = useCallback(async () => {
+    try {
+      const list = await chatApi.getMyRooms()
+      setRooms(Array.isArray(list) ? list : [])
+    } catch { /* keep current */ }
+  }, [])
+
   useEffect(() => {
     let mounted = true
     setRoomsLoading(true)
@@ -92,6 +126,20 @@ function ChatContent() {
       .finally(() => { if (mounted) setRoomsLoading(false) })
     return () => { mounted = false }
   }, [])
+
+  // 선택된 방의 멤버 목록 (isOwner 판단용)
+  useEffect(() => {
+    if (selectedRoomId == null) {
+      setChatMembers([])
+      return
+    }
+    let mounted = true
+    partyApi
+      .getChatRoomMembers(selectedRoomId)
+      .then((list) => { if (mounted) setChatMembers(Array.isArray(list) ? list : []) })
+      .catch(() => { if (mounted) setChatMembers([]) })
+    return () => { mounted = false }
+  }, [selectedRoomId])
 
   // 방 선택 시: 읽음 처리 + 메시지 로드 + STOMP 구독
   const connectAndSubscribe = useCallback(
@@ -181,6 +229,51 @@ function ChatContent() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  const handleDeleteRoom = async () => {
+    if (selectedRoomId == null) return
+    setActionLoading(true)
+    try {
+      await partyApi.deleteChatRoom(selectedRoomId)
+      setDeleteConfirmOpen(false)
+      setSelectedRoomId(null)
+      await refetchRooms()
+    } catch (e: any) {
+      console.error("채팅방 삭제 실패:", e)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleLeave = async () => {
+    if (selectedRoomId == null || myMemberId == null) return
+    setActionLoading(true)
+    try {
+      await partyApi.leaveOrKickMember(selectedRoomId, myMemberId)
+      setLeaveConfirmOpen(false)
+      setSelectedRoomId(null)
+      await refetchRooms()
+    } catch (e: any) {
+      console.error("나가기 실패:", e)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleKick = async (m: ChatMemberResponseDto) => {
+    if (selectedRoomId == null) return
+    setActionLoading(true)
+    try {
+      await partyApi.leaveOrKickMember(selectedRoomId, m.memberId)
+      setKickTarget(null)
+      const list = await partyApi.getChatRoomMembers(selectedRoomId)
+      setChatMembers(Array.isArray(list) ? list : [])
+    } catch (e: any) {
+      console.error("강퇴 실패:", e)
+    } finally {
+      setActionLoading(false)
+    }
+  }
 
   const handleSendMessage = async () => {
     const content = newMessage.trim()
@@ -317,8 +410,121 @@ function ChatContent() {
                       {!wsConnected && (
                         <span className="text-xs text-amber-600 shrink-0">실시간 연결 안 됨</span>
                       )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-5 w-5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setMembersOpen(true)}>
+                            <Users className="h-4 w-4 mr-2" />
+                            멤버 보기
+                          </DropdownMenuItem>
+                          {isOwner && (
+                            <DropdownMenuItem variant="destructive" onClick={() => setDeleteConfirmOpen(true)}>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              채팅방 삭제
+                            </DropdownMenuItem>
+                          )}
+                          {!isOwner && (
+                            <DropdownMenuItem variant="destructive" onClick={() => setLeaveConfirmOpen(true)}>
+                              <LogOut className="h-4 w-4 mr-2" />
+                              나가기
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardHeader>
+
+                  {/* 멤버 보기 Dialog */}
+                  <Dialog open={membersOpen} onOpenChange={setMembersOpen}>
+                    <DialogContent className="max-w-sm">
+                      <DialogHeader>
+                        <DialogTitle>채팅방 멤버</DialogTitle>
+                        <DialogDescription>참가자 목록입니다. 방장만 멤버를 강퇴할 수 있습니다.</DialogDescription>
+                      </DialogHeader>
+                      <ScrollArea className="max-h-[280px] pr-2">
+                        <div className="space-y-2">
+                          {chatMembers.map((m) => (
+                            <div key={m.memberId} className="flex items-center justify-between gap-2 py-1.5 border-b border-border/50 last:border-0">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Avatar className="h-8 w-8 shrink-0">
+                                  {m.profileImage ? <AvatarImage src={m.profileImage} alt="" /> : null}
+                                  <AvatarFallback className="text-xs">{String(m.nickname).slice(-2)}</AvatarFallback>
+                                </Avatar>
+                                <span className="truncate">{m.nickname}</span>
+                                {m.isOwner && <Badge variant="secondary" className="shrink-0 text-[10px]">방장</Badge>}
+                              </div>
+                              <div className="shrink-0">
+                                {isOwner && !m.isOwner && (
+                                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-8" onClick={() => setKickTarget(m)} disabled={actionLoading}>
+                                    강퇴
+                                  </Button>
+                                )}
+                                {!isOwner && m.memberId === myMemberId && (
+                                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-8" onClick={() => { setMembersOpen(false); setLeaveConfirmOpen(true); }} disabled={actionLoading}>
+                                    나가기
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* 채팅방 삭제 확인 */}
+                  <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>채팅방 삭제</DialogTitle>
+                        <DialogDescription>채팅방을 삭제하면 복구할 수 없습니다. 계속할까요?</DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>취소</Button>
+                        <Button variant="destructive" onClick={handleDeleteRoom} disabled={actionLoading}>
+                          {actionLoading ? "처리 중..." : "삭제"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* 나가기 확인 */}
+                  <Dialog open={leaveConfirmOpen} onOpenChange={setLeaveConfirmOpen}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>나가기</DialogTitle>
+                        <DialogDescription>채팅방을 나가시겠습니까?</DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setLeaveConfirmOpen(false)}>취소</Button>
+                        <Button variant="destructive" onClick={handleLeave} disabled={actionLoading}>
+                          {actionLoading ? "처리 중..." : "나가기"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* 강퇴 확인 */}
+                  <Dialog open={kickTarget != null} onOpenChange={(open) => !open && setKickTarget(null)}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>멤버 강퇴</DialogTitle>
+                        <DialogDescription>
+                          {kickTarget ? `${kickTarget.nickname}님을 강퇴하시겠습니까?` : ""}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setKickTarget(null)}>취소</Button>
+                        <Button variant="destructive" onClick={() => kickTarget && handleKick(kickTarget)} disabled={actionLoading}>
+                          {actionLoading ? "처리 중..." : "강퇴"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
 
                   <div className="flex-1 min-h-0 max-h-[50vh] overflow-y-auto p-4">
                     {messagesLoading ? (

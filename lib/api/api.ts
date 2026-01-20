@@ -10,6 +10,7 @@ import type {
   NotificationResponseDto,
   ChatMessageDto,
   ChatRoomResponseDto,
+  ChatMemberResponseDto,
   ScheduleRequestDto,
   Schedule,
   CurrentPresenterResponse,
@@ -553,6 +554,18 @@ export const partyApi = {
     });
   },
 
+  /** 채팅방 멤버 목록 (참가자만, isOwner 포함) */
+  getChatRoomMembers: (chatRoomId: number): Promise<ChatMemberResponseDto[]> => {
+    return apiRequest<ChatMemberResponseDto[]>(`/api/party/rooms/${chatRoomId}/members`);
+  },
+
+  /** 채팅방 삭제 (방장만 가능) */
+  deleteChatRoom: (chatRoomId: number): Promise<void> => {
+    return apiRequest<void>(`/api/party/rooms/${chatRoomId}`, {
+      method: 'DELETE',
+    });
+  },
+
   /** 채팅방 입장 시 읽음 처리 (미읽음 카운트 0) */
   markChatRoomAsRead: (chatRoomId: number): Promise<void> => {
     return apiRequest<void>(`/api/party/rooms/${chatRoomId}/read`, {
@@ -595,6 +608,13 @@ export const adminApi = {
     return apiRequest<string>(`/api/admin/rooms/${roomId}/schedules`, {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  },
+
+  // Delete schedule
+  deleteSchedule: (roomId: number, scheduleId: number): Promise<void> => {
+    return apiRequest<void>(`/api/admin/rooms/${roomId}/schedules/${scheduleId}`, {
+      method: 'DELETE',
     });
   },
 

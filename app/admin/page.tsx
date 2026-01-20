@@ -56,6 +56,7 @@ export default function AdminPage() {
 
   const [scheduleList, setScheduleList] = useState<Schedule[]>([])
   const [scheduleListLoading, setScheduleListLoading] = useState(false)
+  const [deleteScheduleLoading, setDeleteScheduleLoading] = useState(false)
 
   const roomId = member?.roomId ?? null
   const roomName = member?.roomName ?? ""
@@ -189,7 +190,7 @@ export default function AdminPage() {
       setSelectedPresenter(picked)
       await refetchAttendance()
     } catch (e: any) {
-      setError(e?.message ?? e?.error ?? "발표자 선정에 실패했습니다.")
+      setError(e?.message ?? e?.error ?? "진행행자 선정에 실패했습니다.")
     } finally {
       setPresenterLoading(false)
     }
@@ -207,6 +208,20 @@ export default function AdminPage() {
       setError(e?.message ?? e?.error ?? "강퇴에 실패했습니다.")
     } finally {
       setKickLoading(false)
+    }
+  }
+
+  const handleDeleteSchedule = async (s: Schedule) => {
+    if (!roomId || s.scheduleId == null) return
+    setDeleteScheduleLoading(true)
+    try {
+      await adminApi.deleteSchedule(roomId, s.scheduleId)
+      setError(null)
+      await refetchSchedules()
+    } catch (e: any) {
+      setError(e?.message ?? e?.error ?? "일정 삭제에 실패했습니다.")
+    } finally {
+      setDeleteScheduleLoading(false)
     }
   }
 
@@ -505,12 +520,12 @@ export default function AdminPage() {
                         <p className="text-2xl font-bold text-foreground">
                           {selectedPresenter.nickname || selectedPresenter.realName}
                         </p>
-                        <p className="text-muted-foreground">오늘의 스크럼 발표자입니다!</p>
+                        <p className="text-muted-foreground">오늘의 스크럼 진행행자입니다!</p>
                       </div>
                     ) : (
                       <div className="text-center text-muted-foreground">
                         <Shuffle className="mx-auto mb-4 h-16 w-16" />
-                        <p>버튼을 눌러 발표자를 선정하세요</p>
+                        <p>버튼을 눌러 진행행자를 선정하세요</p>
                       </div>
                     )}
                     <Button size="lg" onClick={handlePickPresenter} disabled={presenterLoading}>
@@ -720,6 +735,7 @@ export default function AdminPage() {
                           <TableHead>일시</TableHead>
                           <TableHead>설명</TableHead>
                           <TableHead>중요</TableHead>
+                          <TableHead className="w-[60px] text-right">삭제</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -731,6 +747,17 @@ export default function AdminPage() {
                             </TableCell>
                             <TableCell className="max-w-[200px] truncate text-muted-foreground">{s.content || "-"}</TableCell>
                             <TableCell>{(s.important ?? s.isImportant) ? <Badge variant="secondary">중요</Badge> : "-"}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                disabled={deleteScheduleLoading}
+                                onClick={() => handleDeleteSchedule(s)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

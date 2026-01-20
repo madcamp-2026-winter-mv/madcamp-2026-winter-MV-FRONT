@@ -187,6 +187,14 @@ export interface ChatRoomResponseDto {
   unreadCount?: number;
 }
 
+/** 채팅방 멤버 목록 (GET /api/party/rooms/{chatRoomId}/members) */
+export interface ChatMemberResponseDto {
+  memberId: number;
+  nickname: string;
+  profileImage?: string | null;
+  isOwner: boolean;
+}
+
 export interface Advertisement {
   id: number;
   imageUrl: string;
