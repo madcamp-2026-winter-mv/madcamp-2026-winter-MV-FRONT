@@ -119,12 +119,16 @@ function ChatContent() {
         const { Client } = await import("@stomp/stompjs")
         const SockJS = (await import("sockjs-client")).default
         const wsUrl = getChatWsUrl()
+        console.log('[WS] getChatWsUrl:', wsUrl)
 
         const client = new Client({
           webSocketFactory: () => new SockJS(wsUrl) as any,
           onConnect: () => {
             setWsConnected(true)
-            const sub = client.subscribe(`/sub/chat/room/${roomId}`, (msg) => {
+            // WebSocket 연결 성공 시 메시지 구독
+            const subDest = `/sub/chat/room/${roomId}`
+            console.log('[WS] subscribe:', subDest)
+            const sub = client.subscribe(subDest, (msg) => {
               try {
                 const d = JSON.parse(msg.body) as ChatMessageDto
                 setMessages((prev) => [...prev, d])
