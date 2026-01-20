@@ -49,7 +49,10 @@ export function TodaySchedule({ roomId }: TodayScheduleProps) {
     }
     roomApi
       .getSchedules(roomId)
-      .then(setSchedules)
+      .then((list) => {
+        const today = new Date().toDateString()
+        setSchedules(list.filter((s) => new Date(s.startTime).toDateString() === today))
+      })
       .catch(() => setSchedules([]))
       .finally(() => setLoading(false))
   }, [roomId])

@@ -21,8 +21,8 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Users, Copy, Trash2, Play, Shuffle, Clock, RefreshCw } from "lucide-react"
-import { memberApi, adminApi } from "@/lib/api/api"
-import type { MemberResponseDto } from "@/lib/api/types"
+import { memberApi, adminApi, roomApi } from "@/lib/api/api"
+import type { MemberResponseDto, Schedule } from "@/lib/api/types"
 
 export default function AdminPage() {
   const [member, setMember] = useState<MemberResponseDto | null>(null)
@@ -54,6 +54,9 @@ export default function AdminPage() {
   const [kickTarget, setKickTarget] = useState<MemberResponseDto | null>(null)
   const [kickLoading, setKickLoading] = useState(false)
 
+  const [scheduleList, setScheduleList] = useState<Schedule[]>([])
+  const [scheduleListLoading, setScheduleListLoading] = useState(false)
+
   const roomId = member?.roomId ?? null
   const roomName = member?.roomName ?? ""
 
@@ -82,6 +85,19 @@ export default function AdminPage() {
     }
   }, [roomId])
 
+  const refetchSchedules = useCallback(async () => {
+    if (!roomId) return
+    setScheduleListLoading(true)
+    try {
+      const list = await roomApi.getSchedules(roomId)
+      setScheduleList(list)
+    } catch (e: any) {
+      console.error("일정 목록 조회 실패:", e)
+    } finally {
+      setScheduleListLoading(false)
+    }
+  }, [roomId])
+
   useEffect(() => {
     let mounted = true
     setLoading(true)
@@ -96,6 +112,10 @@ export default function AdminPage() {
   useEffect(() => {
     if (roomId) refetchAttendance()
   }, [roomId, refetchAttendance])
+
+  useEffect(() => {
+    if (roomId) refetchSchedules()
+  }, [roomId, refetchSchedules])
 
   // 출석 종료 시각 복원 (새로고침·다른 탭 다녀와도 유지)
   useEffect(() => {
@@ -192,9 +212,9 @@ export default function AdminPage() {
 
   const handleAddSchedule = async () => {
     if (!roomId || !scheduleForm.title.trim()) return
-    const startTime = scheduleForm.startDate && scheduleForm.startTime
-      ? new Date(`${scheduleForm.startDate}T${scheduleForm.startTime}:00`).toISOString()
-      : new Date().toISOString()
+    const datePart = scheduleForm.startDate || new Date().toISOString().slice(0, 10)
+    const timePart = scheduleForm.startTime || "09:00"
+    const startTime = new Date(`${datePart}T${timePart}:00`).toISOString()
     setScheduleSaving(true)
     try {
       await adminApi.addSchedule(roomId, {
@@ -205,6 +225,8 @@ export default function AdminPage() {
       })
       setIsScheduleOpen(false)
       setScheduleForm({ title: "", content: "", startDate: "", startTime: "09:00", isImportant: false })
+      setError(null)
+      await refetchSchedules()
     } catch (e: any) {
       setError(e?.message ?? e?.error ?? "일정 등록에 실패했습니다.")
     } finally {
@@ -685,9 +707,34 @@ export default function AdminPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground text-sm">
-                    「일정 추가」에서 제목, 날짜·시간, 설명, 중요 여부를 입력한 뒤 등록할 수 있습니다. (일정 목록 조회 API는 현재 미제공)
-                  </div>
+                  {scheduleListLoading ? (
+                    <p className="text-muted-foreground text-sm py-4">로딩 중...</p>
+                  ) : scheduleList.length === 0 ? (
+                    <p className="text-muted-foreground text-sm py-4">등록된 일정이 없습니다. 「일정 추가」로 등록해주세요.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>제목</TableHead>
+                          <TableHead>일시</TableHead>
+                          <TableHead>설명</TableHead>
+                          <TableHead>중요</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {scheduleList.map((s) => (
+                          <TableRow key={s.scheduleId}>
+                            <TableCell className="font-medium">{s.title}</TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              {s.startTime ? new Date(s.startTime).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" }) : "-"}
+                            </TableCell>
+                            <TableCell className="max-w-[200px] truncate text-muted-foreground">{s.content || "-"}</TableCell>
+                            <TableCell>{(s.important ?? s.isImportant) ? <Badge variant="secondary">중요</Badge> : "-"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
