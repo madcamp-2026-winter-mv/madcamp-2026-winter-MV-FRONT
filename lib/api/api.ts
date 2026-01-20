@@ -32,10 +32,15 @@ async function handleResponse<T>(response: Response): Promise<T> {
       statusCode: response.status,
     };
     try {
-      const errorData = await response.json();
-      Object.assign(error, errorData);
-    } catch {
-      // If response is not JSON, use default error
+      const text = await response.text();
+      try {
+        const errorData = JSON.parse(text);
+        Object.assign(error, errorData);
+      } catch {
+        console.error("[API] Error body (비JSON) status=" + response.status, text.substring(0, 500));
+      }
+    } catch (e) {
+      console.error("[API] Error body 읽기 실패", e);
     }
     throw error;
   }
@@ -490,12 +495,35 @@ export const partyApi = {
     });
   },
 
-  // Confirm party
-  confirmParty: (postId: number, selectedMemberIds: number[]): Promise<number> => {
-    return apiRequest<number>(`/api/party/${postId}/confirm`, {
-      method: 'POST',
-      body: JSON.stringify(selectedMemberIds),
-    });
+  // Confirm party (채팅방 개설)
+  confirmParty: async (postId: number, selectedMemberIds: number[]): Promise<number> => {
+    const endpoint = `/api/party/${postId}/confirm`
+    const body = JSON.stringify(selectedMemberIds)
+    console.log("[채팅방개설] API 요청", {
+      endpoint,
+      postId,
+      selectedMemberIds,
+      body,
+      bodyLength: body.length,
+    })
+    try {
+      const chatRoomId = await apiRequest<number>(endpoint, { method: "POST", body })
+      console.log("[채팅방개설] API 성공", { chatRoomId, type: typeof chatRoomId })
+      return chatRoomId
+    } catch (e: unknown) {
+      const ex = e as Record<string, unknown>
+      console.error("[채팅방개설] API 실패", {
+        endpoint,
+        postId,
+        selectedMemberIds,
+        message: ex?.message,
+        error: ex?.error,
+        statusCode: ex?.statusCode,
+        keys: ex ? Object.keys(ex) : [],
+        errString: String(e),
+      })
+      throw e
+    }
   },
 
   // Add member to party

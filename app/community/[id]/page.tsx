@@ -195,19 +195,32 @@ export default function PostDetailPage() {
   const handleConfirmParty = async (): Promise<number | undefined> => {
     if (!postId || confirmingParty) return undefined
     const ids = [...new Set(selectedParticipantIds)]
+    console.log("[채팅방개설] handleConfirmParty 시작", { postId, ids, idsTypes: ids.map((x) => typeof x) })
     if (ids.length === 0) {
+      console.warn("[채팅방개설] 참가자 0명 → 중단")
       toast({ title: "참가자를 한 명 이상 선택해 주세요.", variant: "destructive" })
       return undefined
     }
     setConfirmingParty(true)
     try {
+      console.log("[채팅방개설] partyApi.confirmParty 호출 직전", { postId, ids })
       const chatRoomId = await partyApi.confirmParty(postId, ids)
+      console.log("[채팅방개설] handleConfirmParty 성공", { chatRoomId })
       toast({ title: "모집이 완료되었습니다. 채팅방에서 대화를 나눠보세요." })
       setSelectedParticipantIds([])
       refetch()
       return chatRoomId
     } catch (e: unknown) {
-      const err = e as { message?: string; error?: string }
+      const err = e as { message?: string; error?: string; statusCode?: number }
+      console.error("[채팅방개설] handleConfirmParty 실패", {
+        postId,
+        ids,
+        error: err,
+        message: err?.message,
+        errorField: err?.error,
+        statusCode: err?.statusCode,
+        full: JSON.stringify(e, Object.getOwnPropertyNames(Object(e))),
+      })
       toast({ title: "채팅방 만들기 실패", description: err?.message || err?.error, variant: "destructive" })
       return undefined
     } finally {
@@ -672,8 +685,10 @@ export default function PostDetailPage() {
             <Button variant="outline" onClick={() => setShowChatModal(false)}>취소</Button>
             <Button
               onClick={async () => {
+                console.log("[채팅방개설] 모달 '채팅방 개설' 클릭", { selectedParticipantIds })
                 const chatRoomId = await handleConfirmParty()
                 if (chatRoomId != null) {
+                  console.log("[채팅방개설] 모달 → 채팅 이동", { chatRoomId })
                   setShowChatModal(false)
                   router.push(`/chat?room=${chatRoomId}`)
                 }
