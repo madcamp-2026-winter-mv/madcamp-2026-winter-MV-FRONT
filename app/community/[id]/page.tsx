@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, Heart, MessageSquare, MoreHorizontal, Send, Users, User } from "lucide-react"
+import { ArrowLeft, Heart, MessageSquare, MessageCircle, MoreHorizontal, Send, Users, User } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
@@ -62,6 +62,7 @@ export default function PostDetailPage() {
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<number[]>([])
   const [confirmingParty, setConfirmingParty] = useState(false)
+  const [showChatModal, setShowChatModal] = useState(false)
 
   const authorName = post?.author?.nickname || post?.authorNickname || "—"
   const isAnonymous = !!(post?.author?.anonymous ?? (post?.author as { isAnonymous?: boolean })?.isAnonymous)
@@ -142,14 +143,6 @@ export default function PostDetailPage() {
     setSelectedVoteOptions([optionId])
   }
 
-  const handleJoinParty = async () => {
-    if (!postId || isFull || !isRecruiting) return
-    try {
-      await postApi.joinParty(postId)
-      refetch()
-    } catch { /* ignore */ }
-  }
-
   const handleDelete = async () => {
     if (!postId || !window.confirm("이 글을 삭제할까요?")) return
     try {
@@ -173,22 +166,18 @@ export default function PostDetailPage() {
     finally { setEditSubmitting(false) }
   }
 
-  // 익명이 아닌 댓글만 참가 후보 (memberId 있음, 글 작성자 제외). 팟모집 작성자용.
-  const eligibleComments = comments.filter(
-    (c) => c.memberId != null && !c.isAnonymous && c.authorNickname !== authorName
-  )
   const toggleParticipant = (memberId: number) => {
     setSelectedParticipantIds((prev) =>
       prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]
     )
   }
 
-  const handleConfirmParty = async () => {
-    if (!postId || confirmingParty) return
+  const handleConfirmParty = async (): Promise<boolean> => {
+    if (!postId || confirmingParty) return false
     const ids = [...new Set(selectedParticipantIds)]
     if (ids.length === 0) {
       toast({ title: "참가자를 한 명 이상 선택해 주세요.", variant: "destructive" })
-      return
+      return false
     }
     setConfirmingParty(true)
     try {
@@ -197,9 +186,11 @@ export default function PostDetailPage() {
       setSelectedParticipantIds([])
       refetch()
       // TODO: 생성된 채팅방으로 deep link (/chat?room={chatRoomId})
+      return true
     } catch (e: unknown) {
       const err = e as { message?: string; error?: string }
       toast({ title: "채팅방 만들기 실패", description: err?.message || err?.error, variant: "destructive" })
+      return false
     } finally {
       setConfirmingParty(false)
     }
@@ -268,7 +259,12 @@ export default function PostDetailPage() {
                           )}
                         </Avatar>
                         <div>
-                          <p className="font-semibold">{isAnonymous ? "익명" : authorName}</p>
+                          <p className="font-semibold">
+                            {isAnonymous ? "익명" : authorName}
+                            {post?.author?.roomName && (
+                              <span className="font-normal text-muted-foreground ml-1">· {post.author.roomName}</span>
+                            )}
+                          </p>
                           <p className="text-sm text-muted-foreground">{formatDate(post.createdAt)}</p>
                         </div>
                       </div>
@@ -356,7 +352,14 @@ export default function PostDetailPage() {
                 </Card>
 
                 <Card>
-                  <CardHeader><h3 className="font-semibold">댓글 {comments.length}개</h3></CardHeader>
+                  <CardHeader className="space-y-1">
+                    <h3 className="font-semibold">댓글 {comments.length}개</h3>
+                    {isParty && isAuthor && isRecruiting && (
+                      <p className="text-xs text-muted-foreground">
+                        댓글 작성자 옆의 체크박스를 클릭하여 참가자로 선택할 수 있습니다.
+                      </p>
+                    )}
+                  </CardHeader>
                   <CardContent className="space-y-4">
                     <form onSubmit={handleSubmitComment} className="space-y-3">
                       {!isParty && (
@@ -389,20 +392,50 @@ export default function PostDetailPage() {
                     </form>
                     <Separator />
                     <div className="space-y-4">
-                      {comments.map((c) => (
-                        <div key={c.commentId} className="flex gap-3 p-3 rounded-lg">
-                          <Avatar>
-                            <AvatarFallback className="bg-muted">{c.isAnonymous ? "?" : String(c.authorNickname || "").slice(-2)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">{c.isAnonymous ? "익명" : c.authorNickname}</span>
-                              <span className="text-sm text-muted-foreground">{formatDate(c.createdAt)}</span>
+                      {comments.map((c) => {
+                        const isCommentAuthor = c.authorNickname === authorName
+                        const canBeSelected = !c.isAnonymous && !isCommentAuthor && (c.memberId != null)
+                        const isSelected = c.memberId != null && selectedParticipantIds.includes(c.memberId)
+                        const canAddMore = maxCount <= 0 || 1 + selectedParticipantIds.length < maxCount
+                        const showCheckbox = isParty && isAuthor && isRecruiting && canBeSelected
+                        return (
+                          <div
+                            key={c.commentId}
+                            className={`flex gap-3 p-3 rounded-lg transition-colors ${
+                              isSelected ? "bg-primary/10 border border-primary/30" : ""
+                            }`}
+                          >
+                            {showCheckbox ? (
+                              <div className="flex items-center shrink-0">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={() => c.memberId != null && toggleParticipant(c.memberId)}
+                                  disabled={!isSelected && !canAddMore}
+                                  className="border-primary data-[state=checked]:bg-primary"
+                                />
+                              </div>
+                            ) : isParty && isAuthor && isRecruiting ? (
+                              <div className="w-9 shrink-0" />
+                            ) : null}
+                            <Avatar className="shrink-0">
+                              <AvatarFallback className={isSelected ? "bg-primary text-primary-foreground" : "bg-muted"}>
+                                {c.isAnonymous ? "?" : String(c.authorNickname || "").slice(-2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold">{c.isAnonymous ? "익명" : c.authorNickname}</span>
+                                {isSelected && <Badge className="bg-primary text-primary-foreground text-xs">참가자</Badge>}
+                                {!c.isAnonymous && c.roomName && (
+                                  <span className="text-xs text-muted-foreground">· {c.roomName}</span>
+                                )}
+                                <span className="text-sm text-muted-foreground">{formatDate(c.createdAt)}</span>
+                              </div>
+                              <p className="mt-1 text-foreground">{c.content}</p>
                             </div>
-                            <p className="mt-1 text-foreground">{c.content}</p>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </CardContent>
                 </Card>
@@ -417,62 +450,89 @@ export default function PostDetailPage() {
                           <Users className="h-5 w-5 text-primary" />
                           참가자
                         </h3>
-                        <Badge className="bg-primary text-primary-foreground">{currentCount}/{maxCount}</Badge>
+                        <Badge className="bg-primary text-primary-foreground">
+                          {isAuthor && isRecruiting ? 1 + selectedParticipantIds.length : currentCount}/{maxCount}
+                        </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
+                      {/* 참가자 목록: 작성자 + (글쓴이만) 선택된 댓글 작성자 */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                          <Avatar className="h-8 w-8 shrink-0">
+                            <AvatarFallback className="bg-primary/20 text-primary text-xs">{String(authorName).slice(-2)}</AvatarFallback>
+                          </Avatar>
+                          <span className="flex-1 text-sm font-medium">{authorName}</span>
+                          <Badge variant="outline" className="text-xs">작성자</Badge>
+                        </div>
+                        {isAuthor && isRecruiting && selectedParticipantIds.map((mid) => {
+                          const c = comments.find((x) => x.memberId === mid)
+                          const nick = c?.authorNickname ?? "?"
+                          return (
+                            <div key={mid} className="flex items-center gap-3 p-2 rounded-lg bg-primary/10 border border-primary/30">
+                              <Avatar className="h-8 w-8 shrink-0">
+                                <AvatarFallback className="bg-primary/20 text-primary text-xs">{String(nick).slice(-2)}</AvatarFallback>
+                              </Avatar>
+                              <span className="flex-1 text-sm font-medium">{nick}</span>
+                              <Badge className="bg-primary text-primary-foreground text-xs">참가자</Badge>
+                            </div>
+                          )
+                        })}
+                        {/* 빈 슬롯 */}
+                        {Array.from({ length: Math.max(0, maxCount - 1 - (isAuthor && isRecruiting ? selectedParticipantIds.length : Math.max(0, currentCount - 1))) }).map((_, i) => (
+                          <div key={`empty-${i}`} className="flex items-center gap-3 p-2 rounded-lg border border-dashed border-border">
+                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                              <span className="text-muted-foreground text-xs">?</span>
+                            </div>
+                            <span className="flex-1 text-sm text-muted-foreground">빈 자리</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {isAuthor && isRecruiting && 1 + selectedParticipantIds.length >= 2 && (
+                        <Button
+                          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                          onClick={() => setShowChatModal(true)}
+                          disabled={confirmingParty}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          채팅방 만들기
+                        </Button>
+                      )}
+
                       {!isRecruiting && (
                         <div className="p-3 rounded-lg bg-muted text-center">
                           <p className="text-sm font-medium text-muted-foreground">모집이 완료되었습니다</p>
+                          <p className="text-xs text-muted-foreground mt-1">채팅방에서 대화를 나눠보세요</p>
                           <Link href="/chat">
-                            <Button variant="outline" size="sm" className="mt-2 bg-transparent">채팅방으로 이동</Button>
+                            <Button variant="outline" size="sm" className="mt-2 bg-transparent">
+                              <MessageCircle className="h-4 w-4 mr-2" />
+                              채팅방으로 이동
+                            </Button>
                           </Link>
                         </div>
                       )}
-                      {!isAuthor && isRecruiting && !isFull && (
-                        <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleJoinParty}>
-                          <Users className="h-4 w-4 mr-2" />
-                          참가하기
-                        </Button>
+
+                      {!isAuthor && isRecruiting && (
+                        <div className="p-3 rounded-lg bg-primary/5 text-center">
+                          <p className="text-sm text-muted-foreground">댓글을 남기면 작성자가 참가자로 선택할 수 있습니다</p>
+                          <p className="text-xs text-muted-foreground mt-1">익명 댓글은 참가자로 선택될 수 없습니다</p>
+                        </div>
                       )}
                     </CardContent>
                   </Card>
 
                   {isAuthor && isRecruiting && (
                     <Card className="border-primary/30 bg-primary/5">
-                      <CardHeader className="pb-2">
-                        <h3 className="font-semibold text-sm">참가자 등록</h3>
-                        <p className="text-xs text-muted-foreground">댓글을 달린 사용자 중 참가할 멤버를 골라 채팅방을 만드세요.</p>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {eligibleComments.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">참가 후보가 없습니다. 댓글이 달리면 여기에 표시됩니다.</p>
-                        ) : (
-                          <div className="space-y-2 max-h-48 overflow-y-auto">
-                            {eligibleComments.map((c) => (
-                              <div
-                                key={c.commentId}
-                                className="flex items-center gap-2 p-2 rounded border bg-background"
-                              >
-                                <Checkbox
-                                  id={`participant-${c.commentId}`}
-                                  checked={c.memberId != null && selectedParticipantIds.includes(c.memberId)}
-                                  onCheckedChange={() => c.memberId != null && toggleParticipant(c.memberId)}
-                                />
-                                <Label htmlFor={`participant-${c.commentId}`} className="flex-1 cursor-pointer text-sm">
-                                  {c.authorNickname}
-                                </Label>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <Button
-                          className="w-full"
-                          onClick={handleConfirmParty}
-                          disabled={selectedParticipantIds.length === 0 || confirmingParty}
-                        >
-                          {confirmingParty ? "생성 중..." : "채팅방 만들기"}
-                        </Button>
+                      <CardContent className="p-4 space-y-2">
+                        <p className="text-sm font-medium">팟 모집 안내</p>
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          <li>· 댓글 작성자 옆 체크박스로 참가자 선택</li>
+                          <li>· 익명 댓글 작성자는 선택 불가</li>
+                          <li>· 최대 {maxCount}명까지 선택 가능</li>
+                          <li>· 2명 이상 선택 시 채팅방 개설 가능</li>
+                          <li>· 채팅방 개설 시 모집이 완료됩니다</li>
+                        </ul>
                       </CardContent>
                     </Card>
                   )}
@@ -502,6 +562,42 @@ export default function PostDetailPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>취소</Button>
             <Button onClick={handleEditSave} disabled={editSubmitting}>{editSubmitting ? "저장 중..." : "저장"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 채팅방 개설 확인 모달 */}
+      <Dialog open={showChatModal} onOpenChange={setShowChatModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>채팅방 개설</DialogTitle>
+            <DialogDescription>
+              현재 참가자 {1 + selectedParticipantIds.length}명으로 채팅방을 개설하시겠습니까?
+              <br />
+              채팅방 개설 시 모집이 완료됩니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm font-medium mb-2">참가자 목록</p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="bg-primary/10">{authorName}</Badge>
+              {selectedParticipantIds.map((mid) => {
+                const c = comments.find((x) => x.memberId === mid)
+                return <Badge key={mid} variant="outline" className="bg-primary/10">{c?.authorNickname ?? "?"}</Badge>
+              })}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowChatModal(false)}>취소</Button>
+            <Button
+              onClick={async () => {
+                const ok = await handleConfirmParty()
+                if (ok) setShowChatModal(false)
+              }}
+              disabled={confirmingParty}
+            >
+              {confirmingParty ? "생성 중..." : "채팅방 개설"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

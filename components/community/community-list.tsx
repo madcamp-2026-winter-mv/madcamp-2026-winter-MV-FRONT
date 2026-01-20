@@ -86,7 +86,9 @@ export function CommunityList({ selectedCategory = "전체", refreshKey = 0, cat
     return () => { mounted = false }
   }, [selectedCategory, categories, refreshKey])
 
-  const recruitingParties = posts.filter((p) => p.type === PostType.PARTY && p.partyInfo?.recruiting)
+  const recruitingParties = posts
+    .filter((p) => p.type === PostType.PARTY && p.partyInfo?.recruiting)
+    .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
   // 전체: 모든 글 표시(팟모집 포함). 카테고리별: 해당 카테고리 글만. 팟모집 탭은 PARTY만 표시(백엔드 보완).
   const filtered = isPartyTab
     ? posts.filter((p) => p.type === PostType.PARTY)
@@ -181,6 +183,12 @@ export function CommunityList({ selectedCategory = "전체", refreshKey = 0, cat
                             </Badge>
                           )}
                           <span className="text-xs text-muted-foreground">{authorNick(post)}</span>
+                          {post.author?.roomName && (
+                            <>
+                              <span className="text-xs text-muted-foreground">·</span>
+                              <span className="text-xs text-muted-foreground">{post.author.roomName}</span>
+                            </>
+                          )}
                           <span className="text-xs text-muted-foreground">·</span>
                           <span className="text-xs text-muted-foreground">{timeStr(post)}</span>
                         </div>

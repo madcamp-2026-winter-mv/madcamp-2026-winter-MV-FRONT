@@ -67,6 +67,8 @@ export interface AuthorDto {
   anonymous?: boolean;
   isAnonymous?: boolean;
   imageUrl?: string;
+  /** 글쓴이 분반명 */
+  roomName?: string;
 }
 
 export interface PartyInfoDto {
@@ -83,6 +85,8 @@ export interface CommentResponseDto {
   authorNickname: string;
   createdAt: string; // ISO 8601 format
   isAnonymous?: boolean;
+  /** 댓글 작성자 분반명 (익명이면 없음) */
+  roomName?: string;
 }
 
 export interface VoteResponse {
