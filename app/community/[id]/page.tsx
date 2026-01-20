@@ -607,12 +607,7 @@ export default function PostDetailPage() {
                         </div>
                       )}
 
-                      {!isAuthor && isRecruiting && (
-                        <div className="p-3 rounded-lg bg-primary/5 text-center">
-                          <p className="text-sm text-muted-foreground">댓글을 남기면 작성자가 참가자로 선택할 수 있습니다</p>
-                          <p className="text-xs text-muted-foreground mt-1">익명 댓글은 참가자로 선택될 수 없습니다</p>
-                        </div>
-                      )}
+
                     </CardContent>
                   </Card>
 
@@ -622,10 +617,20 @@ export default function PostDetailPage() {
                         <p className="text-sm font-medium">팟 모집 안내</p>
                         <ul className="text-xs text-muted-foreground space-y-1">
                           <li>· 댓글 작성자 옆 체크박스로 참가자 선택</li>
-                          <li>· 익명 댓글 작성자는 선택 불가</li>
-                          <li>· 최대 {maxCount}명까지 선택 가능</li>
                           <li>· 2명 이상 선택 시 채팅방 개설 가능</li>
                           <li>· 채팅방 개설 시 모집이 완료됩니다</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {!isAuthor && isRecruiting && (
+                    <Card className="border-primary/30 bg-primary/5">
+                      <CardContent className="p-4 space-y-2">
+                        <p className="text-sm font-medium">팟 참가 안내</p>
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          <li>· 참가를 원한다면 댓글을 남겨주세요</li>
+                          <li>· 댓글을 남기면 작성자가 참가시킬 수 있습니다</li>
                         </ul>
                       </CardContent>
                     </Card>
