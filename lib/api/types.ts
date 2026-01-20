@@ -233,3 +233,14 @@ export interface ApiError {
   message?: string;
   statusCode?: number;
 }
+
+/** Spring Page<T> (GET /api/posts/search 등) */
+export interface PageDto<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;  // 0-based page index
+  first: boolean;
+  last: boolean;
+}

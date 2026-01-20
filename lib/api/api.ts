@@ -17,6 +17,7 @@ import type {
   Advertisement,
   HomeDashboardResponse,
   ApiError,
+  PageDto,
 } from './types';
 
 // ========== 글&댓글 (Posts & Comments) API ==========
@@ -241,9 +242,11 @@ export const postApi = {
     });
   },
 
-  // Search posts
-  searchPosts: (keyword: string): Promise<PostResponseDto[]> => {
-    return apiRequest<PostResponseDto[]>(`/api/posts/search?keyword=${encodeURIComponent(keyword)}`);
+  /** 게시글 검색 (페이지네이션). keyword 비어있으면 백엔드가 Page.empty() 반환. */
+  searchPosts: (keyword: string, page = 0, size = 10): Promise<PageDto<PostResponseDto>> => {
+    return apiRequest<PageDto<PostResponseDto>>(
+      `/api/posts/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`
+    );
   },
 
   // Get room dashboard

@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/hooks/use-auth"
 import { notificationApi } from "@/lib/api/api"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 interface DesktopHeaderProps {
   title: string
@@ -18,7 +18,9 @@ interface DesktopHeaderProps {
 export function DesktopHeader({ title }: DesktopHeaderProps) {
   const { user, logout } = useAuth()
   const pathname = usePathname()
+  const router = useRouter()
   const [headerUnread, setHeaderUnread] = useState(0)
+  const [searchValue, setSearchValue] = useState("")
 
   useEffect(() => {
     notificationApi.getSidebarUnreadCount().then(setHeaderUnread).catch(() => setHeaderUnread(0))
@@ -26,6 +28,12 @@ export function DesktopHeader({ title }: DesktopHeaderProps) {
 
   const handleLogout = async () => {
     await logout()
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    const q = searchValue.trim()
+    if (q) router.push(`/search?q=${encodeURIComponent(q)}`)
   }
 
   const userInitial = user?.nickname?.[0] || user?.realName?.[0] || "?"
@@ -36,10 +44,15 @@ export function DesktopHeader({ title }: DesktopHeaderProps) {
 
       <div className="flex items-center gap-4">
         {/* Search */}
-        <div className="relative hidden lg:block">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="검색..." className="w-64 pl-9" />
-        </div>
+        <form onSubmit={handleSearch} className="relative hidden lg:block">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="게시글 검색..."
+            className="w-64 pl-9"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+          />
+        </form>
 
         {/* Notifications */}
         <Link href="/notifications" className="relative">
