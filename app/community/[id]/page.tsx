@@ -90,7 +90,8 @@ export default function PostDetailPage() {
     if (!postId) return
     postApi.getPostDetail(postId).then((p) => {
       setPost(p)
-      if (Array.isArray(p.tempParticipantIds)) setSelectedParticipantIds(p.tempParticipantIds)
+      // 댓글 삭제 시 참가자 목록에서도 제거된 뒤 반영된 tempParticipantIds로 동기화
+      setSelectedParticipantIds(Array.isArray(p.tempParticipantIds) ? p.tempParticipantIds : [])
     }).catch(() => setPost(null))
   }
 
