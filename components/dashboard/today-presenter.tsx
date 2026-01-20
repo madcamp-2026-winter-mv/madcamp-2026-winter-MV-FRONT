@@ -32,7 +32,7 @@ export function TodayPresenter({ roomId }: TodayPresenterProps) {
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="pb-2 bg-gradient-to-r from-primary/20 to-primary/5">
+      <CardHeader className="pb-2 bg-linear-to-r from-primary/20 to-primary/5">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Mic2 className="h-4 w-4 text-primary" />
           오늘의 제물
