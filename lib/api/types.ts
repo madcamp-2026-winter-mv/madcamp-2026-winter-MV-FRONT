@@ -171,6 +171,23 @@ export interface HomeDashboardResponse {
 
 // ========== API Error Response ==========
 
+// GET /api/rooms/{roomId}/schedules 응답 (백엔드: isImportant → JSON에 important 또는 isImportant)
+export interface Schedule {
+  scheduleId: number;
+  title: string;
+  content?: string;
+  startTime: string; // ISO 8601
+  important?: boolean;
+  isImportant?: boolean;
+}
+
+// GET /api/rooms/{roomId}/presenter 응답
+export interface CurrentPresenterResponse {
+  presenterNickname?: string;
+  presenterEmail?: string;
+  message?: string;
+}
+
 export interface ApiError {
   error: string;
   message?: string;

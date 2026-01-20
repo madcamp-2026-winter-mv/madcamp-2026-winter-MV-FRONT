@@ -1,34 +1,97 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, Clock, AlertCircle } from "lucide-react"
+import { CheckCircle2, PlayCircle } from "lucide-react"
+import { roomApi } from "@/lib/api/api"
+import { toast } from "@/hooks/use-toast"
 
-export function AttendanceWidget() {
-  const [isAttendanceActive, setIsAttendanceActive] = useState(true)
+interface AttendanceWidgetProps {
+  roomId?: number
+  role?: string
+  email?: string
+}
+
+export function AttendanceWidget({ roomId, role, email }: AttendanceWidgetProps) {
   const [hasCheckedIn, setHasCheckedIn] = useState(false)
+  const [submitLoading, setSubmitLoading] = useState(false)
+  const [startLoading, setStartLoading] = useState(false)
+  const [canStart, setCanStart] = useState(false)
 
-  // 예시 데이터
-  const attendedCount = 18
-  const totalCount = 25
-  const attendancePercentage = (attendedCount / totalCount) * 100
+  // 운영진(OWNER/ADMIN) 또는 현재 발표자만 출석 시작 가능 → getCurrentPresenter로 발표자 여부 확인
+  useEffect(() => {
+    if (!roomId || !email) {
+      setCanStart(false)
+      return
+    }
+    const isAdminOrOwner = role === "OWNER" || role === "ADMIN"
+    if (isAdminOrOwner) {
+      setCanStart(true)
+      return
+    }
+    roomApi
+      .getCurrentPresenter(roomId)
+      .then((r) => setCanStart(r.presenterEmail === email))
+      .catch(() => setCanStart(false))
+  }, [roomId, role, email])
 
-  const handleCheckIn = () => {
-    setHasCheckedIn(true)
+  const handleCheckIn = async () => {
+    if (!roomId) return
+    setSubmitLoading(true)
+    try {
+      await roomApi.submitAttendance()
+      setHasCheckedIn(true)
+      toast({ title: "출석 체크 완료!" })
+    } catch (e: unknown) {
+      const err = e as { message?: string; error?: string }
+      toast({
+        title: "출석 실패",
+        description: err?.message || err?.error || "출석 가능 시간이 아닐 수 있습니다.",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmitLoading(false)
+    }
+  }
+
+  const handleStartAttendance = async () => {
+    if (!roomId) return
+    setStartLoading(true)
+    try {
+      await roomApi.startAttendance(roomId, 5)
+      toast({ title: "출석이 5분 동안 시작되었습니다." })
+    } catch (e: unknown) {
+      const err = e as { message?: string; error?: string }
+      toast({
+        title: "출석 시작 실패",
+        description: err?.message || err?.error || "권한이 없거나 요청을 처리할 수 없습니다.",
+        variant: "destructive",
+      })
+    } finally {
+      setStartLoading(false)
+    }
+  }
+
+  if (!roomId) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold">실시간 출석 현황</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">분반에 가입해 주세요.</p>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
-    <Card className={isAttendanceActive && !hasCheckedIn ? "border-destructive border-2" : ""}>
+    <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            {isAttendanceActive && !hasCheckedIn && (
-              <span className="h-3 w-3 rounded-full bg-destructive animate-pulse-red" />
-            )}
-            실시간 출석 현황
-          </CardTitle>
+          <CardTitle className="text-base font-semibold">실시간 출석 현황</CardTitle>
           {hasCheckedIn && (
             <span className="flex items-center gap-1 text-sm text-green-600">
               <CheckCircle2 className="h-4 w-4" />
@@ -38,38 +101,41 @@ export function AttendanceWidget() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {isAttendanceActive && !hasCheckedIn && (
-          <div className="rounded-lg bg-destructive/10 p-3 border border-destructive/20">
-            <div className="flex items-center gap-2 text-destructive font-medium mb-2">
-              <AlertCircle className="h-4 w-4" />
-              출석이 진행 중입니다!
-            </div>
+        {!hasCheckedIn && (
+          <div className="rounded-lg bg-muted/50 p-3 border border-border">
             <Button
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
               onClick={handleCheckIn}
+              disabled={submitLoading}
             >
-              지금 바로 출석하기
+              {submitLoading ? "처리 중..." : "지금 바로 출석하기"}
+            </Button>
+          </div>
+        )}
+
+        {canStart && (
+          <div className="rounded-lg bg-muted/50 p-3 border border-border">
+            <p className="text-sm text-muted-foreground mb-2">운영진/발표자: 출석을 시작할 수 있습니다.</p>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleStartAttendance}
+              disabled={startLoading}
+            >
+              <PlayCircle className="h-4 w-4 mr-2" />
+              {startLoading ? "처리 중..." : "출석 시작 (5분)"}
             </Button>
           </div>
         )}
 
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">우리 분반 출석률</span>
-            <span className="font-semibold">
-              {attendedCount}/{totalCount}명
-            </span>
+            <span className="text-muted-foreground">우리 분반 출석</span>
+            <span className="font-semibold">—/— 명</span>
           </div>
-          <Progress value={attendancePercentage} className="h-3" />
-          <p className="text-xs text-muted-foreground text-center">{attendancePercentage.toFixed(0)}% 출석 완료</p>
+          <Progress value={0} className="h-3" />
+          <p className="text-xs text-muted-foreground text-center">출석률 정보는 운영진 화면에서 확인할 수 있습니다.</p>
         </div>
-
-        {!isAttendanceActive && (
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-2">
-            <Clock className="h-4 w-4" />
-            다음 출석까지 대기 중
-          </div>
-        )}
       </CardContent>
     </Card>
   )

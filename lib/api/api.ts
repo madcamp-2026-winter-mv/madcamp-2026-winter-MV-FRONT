@@ -11,6 +11,8 @@ import type {
   ChatMessageDto,
   ChatRoomResponseDto,
   ScheduleRequestDto,
+  Schedule,
+  CurrentPresenterResponse,
   Advertisement,
   HomeDashboardResponse,
   ApiError,
@@ -403,6 +405,16 @@ export const chatApi = {
 // ========== Room APIs ==========
 
 export const roomApi = {
+  // GET /api/rooms/{roomId}/presenter — 현재 발표자 조회
+  getCurrentPresenter: (roomId: number): Promise<CurrentPresenterResponse> => {
+    return apiRequest<CurrentPresenterResponse>(`/api/rooms/${roomId}/presenter`);
+  },
+
+  // GET /api/rooms/{roomId}/schedules — 분반 일정 조회
+  getSchedules: (roomId: number): Promise<Schedule[]> => {
+    return apiRequest<Schedule[]>(`/api/rooms/${roomId}/schedules`);
+  },
+
   // Join room
   joinRoom: (inviteCode: string): Promise<string> => {
     return apiRequest<string>('/api/rooms/join', {

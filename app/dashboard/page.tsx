@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
@@ -10,10 +10,13 @@ import { TodayPresenter } from "@/components/dashboard/today-presenter"
 import { HotPosts } from "@/components/dashboard/hot-posts"
 import { QuickLinks } from "@/components/dashboard/quick-links"
 import { useAuth } from "@/hooks/use-auth"
+import { memberApi } from "@/lib/api/api"
+import type { MemberResponseDto } from "@/lib/api/types"
 
 export default function DashboardPage() {
   const router = useRouter()
   const { isAuthenticated, isLoading } = useAuth()
+  const [myInfo, setMyInfo] = useState<MemberResponseDto | null>(null)
 
   // 인증되지 않은 경우 로그인 페이지로 리다이렉트
   useEffect(() => {
@@ -21,6 +24,12 @@ export default function DashboardPage() {
       router.push("/")
     }
   }, [isAuthenticated, isLoading, router])
+
+  // 로그인 후 내 정보 조회 (roomId 등)
+  useEffect(() => {
+    if (!isAuthenticated || isLoading) return
+    memberApi.getMyInfo().then(setMyInfo).catch(() => setMyInfo(null))
+  }, [isAuthenticated, isLoading])
 
   // 로딩 중이거나 인증되지 않은 경우 로딩 화면 표시
   if (isLoading || !isAuthenticated) {
@@ -45,16 +54,16 @@ export default function DashboardPage() {
           {/* 상단 영역: 출석 + 일정 */}
           <div className="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
             <div className="xl:col-span-2">
-              <AttendanceWidget />
+              <AttendanceWidget roomId={myInfo?.roomId} role={myInfo?.role} email={myInfo?.email} />
             </div>
             <div>
-              <TodaySchedule />
+              <TodaySchedule roomId={myInfo?.roomId} />
             </div>
           </div>
 
           {/* 중간 영역: 발표자 + HOT 게시글 */}
           <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <TodayPresenter />
+            <TodayPresenter roomId={myInfo?.roomId} />
             <HotPosts />
           </div>
 
