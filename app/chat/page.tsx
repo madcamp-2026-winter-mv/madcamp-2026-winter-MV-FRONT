@@ -119,10 +119,12 @@ function ChatContent() {
         const { Client } = await import("@stomp/stompjs")
         const SockJS = (await import("sockjs-client")).default
         const wsUrl = getChatWsUrl()
-        console.log('[WS] getChatWsUrl:', wsUrl)
+        // SockJS는 HTTP(S)로 /info 핸드셰이크를 하므로, ws/wss → http/https 변환
+        const sockJsUrl = wsUrl.replace(/^wss:\/\//, "https://").replace(/^ws:\/\//, "http://")
+        console.log("[WS] getChatWsUrl:", wsUrl, "→ SockJS:", sockJsUrl)
 
         const client = new Client({
-          webSocketFactory: () => new SockJS(wsUrl) as any,
+          webSocketFactory: () => new SockJS(sockJsUrl) as any,
           onConnect: () => {
             setWsConnected(true)
             // WebSocket 연결 성공 시 메시지 구독

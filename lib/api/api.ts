@@ -38,6 +38,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
         Object.assign(error, errorData);
       } catch {
         console.error("[API] Error body (비JSON) status=" + response.status, text.substring(0, 500));
+        error.message = "서버 오류가 발생했습니다. (HTTP " + response.status + ")";
       }
     } catch (e) {
       console.error("[API] Error body 읽기 실패", e);
@@ -45,13 +46,17 @@ async function handleResponse<T>(response: Response): Promise<T> {
     throw error;
   }
 
-  // Handle empty responses
+  // response.json()은 빈 본문 시 "Unexpected end of JSON input" 발생
+  // (ResponseEntity.ok().build() 등) → text()로 읽고, 본문 있을 때만 JSON 파싱
   const contentType = response.headers.get('content-type');
+  const text = await response.text();
   if (!contentType || !contentType.includes('application/json')) {
-    return response.text() as unknown as T;
+    return text as unknown as T;
   }
-
-  return response.json();
+  if (text.trim().length === 0) {
+    return null as unknown as T; // 200 OK, empty body (e.g. leaveOrKickMember, addMember)
+  }
+  return JSON.parse(text) as T;
 }
 
 async function apiRequest<T>(
