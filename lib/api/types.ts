@@ -124,6 +124,10 @@ export interface PostResponseDto {
   isAuthor?: boolean;
   /** 팟 작성자일 때만. 임시 참가자(선택된 댓글 작성자) memberId 목록. */
   tempParticipantIds?: number[];
+  /** 팟 모집 완료 시 해당 게시글의 채팅방 ID. 참가자에게만 노출되는 '채팅방으로 이동'용. */
+  chatRoomId?: number | null;
+  /** 팟 모집 완료 시, 현재 사용자가 그 채팅방 참가자인지. 참가자에게만 '채팅방에서 대화를 나눠보세요' 블록 노출. */
+  isChatParticipant?: boolean;
 }
 
 export interface MemberResponseDto {
@@ -165,6 +169,7 @@ export interface NotificationResponseDto {
 export interface ChatMessageDto {
   chatRoomId: number;
   senderNickname: string;
+  senderProfileImageUrl?: string | null;
   content: string;
   timestamp: string;
 }

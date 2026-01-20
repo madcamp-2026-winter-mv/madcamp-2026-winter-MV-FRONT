@@ -16,7 +16,9 @@ const ALLOWED_TYPES = ["COMMENT", "CHAT_INVITE"]
 
 function formatTimeAgo(iso: string) {
   try {
-    const d = new Date(iso)
+    // 서버 LocalDateTime이 UTC로 저장된 경우: 타임존 없으면 'Z' 부여 (9시간 차이 보정)
+    const str = /Z|[-+]\d{2}:?\d{2}$/.test(iso) ? iso : iso + "Z"
+    const d = new Date(str)
     if (isNaN(d.getTime())) return iso
     const s = Math.floor((Date.now() - d.getTime()) / 1000)
     if (s < 60) return "방금 전"
@@ -32,11 +34,11 @@ function formatTimeAgo(iso: string) {
 function getIcon(type?: string) {
   switch (type) {
     case "COMMENT":
-      return <MessageSquare className="h-5 w-5" />
+      return <MessageSquare className="h-6 w-6" />
     case "CHAT_INVITE":
-      return <Users className="h-5 w-5" />
+      return <Users className="h-6 w-6" />
     default:
-      return <Bell className="h-5 w-5" />
+      return <Bell className="h-6 w-6" />
   }
 }
 
@@ -111,7 +113,7 @@ export default function NotificationsPage() {
       }`}
     >
       <div
-        className={`rounded-full p-2 ${
+        className={`rounded-full p-3 ${
           !isRead(n) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
         }`}
       >
@@ -144,7 +146,7 @@ export default function NotificationsPage() {
         <Button
           variant="ghost"
           size="icon"
-          className="text-muted-foreground hover:text-destructive"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={() => handleDelete(n.notificationId)}
           title="삭제"
         >

@@ -90,7 +90,9 @@ export function DesktopSidebar() {
               <Bell className="h-5 w-5" />
               알림
               {sidebarUnread > 0 && (
-                <span className="ml-auto h-2 w-3 rounded-full bg-amber-500" aria-label="읽지 않은 알림" />
+                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-medium text-destructive-foreground">
+                  {sidebarUnread > 99 ? "99+" : sidebarUnread}
+                </span>
               )}
             </Button>
           </Link>

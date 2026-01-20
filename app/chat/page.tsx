@@ -7,7 +7,7 @@ import { DesktopHeader } from "@/components/layout/desktop-header"
 import Link from "next/link"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
@@ -237,15 +237,10 @@ function ChatContent() {
                         )}
                       >
                         <div className="flex items-start gap-3">
-                          <Avatar className="relative shrink-0">
+                          <Avatar className="shrink-0">
                             <AvatarFallback className="bg-primary/20 text-primary">
                               {room.roomName.slice(0, 2)}
                             </AvatarFallback>
-                            {(room.unreadCount ?? 0) > 0 && (
-                              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 flex items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
-                                {room.unreadCount! > 99 ? "99+" : room.unreadCount}
-                              </span>
-                            )}
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
@@ -257,11 +252,18 @@ function ChatContent() {
                             <p className="text-sm text-muted-foreground truncate">
                               {room.postTitle ?? `게시글 #${room.postId}`}
                             </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Users className="h-3 w-3 text-muted-foreground shrink-0" />
-                              <span className="text-xs text-muted-foreground">
-                                {room.participantCount ?? "—"}명
-                              </span>
+                            <div className="flex items-center justify-between gap-2 mt-1">
+                              <div className="flex items-center gap-2">
+                                <Users className="h-3 w-3 text-muted-foreground shrink-0" />
+                                <span className="text-xs text-muted-foreground">
+                                  {room.participantCount ?? "—"}명
+                                </span>
+                              </div>
+                              {(room.unreadCount ?? 0) > 0 && (
+                                <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-[10px]">
+                                  {room.unreadCount! > 99 ? "99+" : room.unreadCount}
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -329,6 +331,7 @@ function ChatContent() {
                             >
                               {!isMe && (
                                 <Avatar className="h-8 w-8 shrink-0">
+                                  {msg.senderProfileImageUrl && <AvatarImage src={msg.senderProfileImageUrl} alt="" />}
                                   <AvatarFallback className="bg-muted text-xs">
                                     {String(msg.senderNickname).slice(-2)}
                                   </AvatarFallback>

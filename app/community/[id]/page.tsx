@@ -594,11 +594,11 @@ export default function PostDetailPage() {
                         </Button>
                       )}
 
-                      {!isRecruiting && (
+                      {!isRecruiting && (post?.isChatParticipant === true) && (
                         <div className="p-3 rounded-lg bg-muted text-center">
                           <p className="text-sm font-medium text-muted-foreground">모집이 완료되었습니다</p>
                           <p className="text-xs text-muted-foreground mt-1">채팅방에서 대화를 나눠보세요</p>
-                          <Link href="/chat">
+                          <Link href={post?.chatRoomId ? `/chat?room=${post.chatRoomId}` : "/chat"}>
                             <Button variant="outline" size="sm" className="mt-2 bg-transparent">
                               <MessageCircle className="h-4 w-4 mr-2" />
                               채팅방으로 이동
