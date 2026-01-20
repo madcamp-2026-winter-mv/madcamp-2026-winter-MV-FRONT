@@ -15,6 +15,7 @@ import { Send, Users, ArrowLeft, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { chatApi, getChatWsUrl, memberApi } from "@/lib/api/api"
 import type { ChatRoomResponseDto, ChatMessageDto } from "@/lib/api/types"
+import { Suspense } from "react"
 
 function formatTime(s: string) {
   try {
@@ -41,7 +42,7 @@ function formatRoomTime(s: string) {
   }
 }
 
-export default function ChatPage() {
+function ChatContent() {
   const searchParams = useSearchParams()
   const [rooms, setRooms] = useState<ChatRoomResponseDto[]>([])
   const [messages, setMessages] = useState<ChatMessageDto[]>([])
@@ -389,5 +390,19 @@ export default function ChatPage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">채팅 서비스를 준비 중입니다...</p>
+        </div>
+      </div>
+    }>
+      <ChatContent />
+    </Suspense>
   )
 }
