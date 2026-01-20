@@ -183,10 +183,10 @@ export function CommunityList({ selectedCategory = "전체", refreshKey = 0, cat
                             </Badge>
                           )}
                           <span className="text-xs text-muted-foreground">{authorNick(post)}</span>
-                          {post.author?.roomName && (
+                          {!isAnon(post) && post.author?.roomId != null && (
                             <>
                               <span className="text-xs text-muted-foreground">·</span>
-                              <span className="text-xs text-muted-foreground">{post.author.roomName}</span>
+                              <span className="text-xs text-muted-foreground">{post.author.roomId} 분반</span>
                             </>
                           )}
                           <span className="text-xs text-muted-foreground">·</span>

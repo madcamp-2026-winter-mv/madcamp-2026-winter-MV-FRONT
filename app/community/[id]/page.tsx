@@ -61,12 +61,13 @@ export default function PostDetailPage() {
   const [editContent, setEditContent] = useState("")
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<number[]>([])
+  const [togglingParticipantId, setTogglingParticipantId] = useState<number | null>(null)
   const [confirmingParty, setConfirmingParty] = useState(false)
   const [showChatModal, setShowChatModal] = useState(false)
 
   const authorName = post?.author?.nickname || post?.authorNickname || "—"
   const isAnonymous = !!(post?.author?.anonymous ?? (post?.author as { isAnonymous?: boolean })?.isAnonymous)
-  const isAuthor = post?.isAuthor ?? !!(myNickname && myNickname === authorName)
+  const isAuthor = post?.isAuthor === true || (post?.isAuthor == null && !!(myNickname && myNickname === authorName))
   const comments: CommentResponseDto[] = post?.comments ?? []
   const likeCount = post?.likeCount ?? 0
   const isLiked = post?.liked ?? false
@@ -82,7 +83,10 @@ export default function PostDetailPage() {
 
   const refetch = () => {
     if (!postId) return
-    postApi.getPostDetail(postId).then(setPost).catch(() => setPost(null))
+    postApi.getPostDetail(postId).then((p) => {
+      setPost(p)
+      if (Array.isArray(p.tempParticipantIds)) setSelectedParticipantIds(p.tempParticipantIds)
+    }).catch(() => setPost(null))
   }
 
   useEffect(() => {
@@ -101,6 +105,7 @@ export default function PostDetailPage() {
           setMyNickname(m.nickname)
           setEditTitle(p.title)
           setEditContent(p.content)
+          setSelectedParticipantIds(Array.isArray(p.tempParticipantIds) ? p.tempParticipantIds : [])
         }
       })
       .catch((e: { message?: string }) => {
@@ -166,10 +171,18 @@ export default function PostDetailPage() {
     finally { setEditSubmitting(false) }
   }
 
-  const toggleParticipant = (memberId: number) => {
-    setSelectedParticipantIds((prev) =>
-      prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]
-    )
+  const handleToggleParticipant = async (memberId: number) => {
+    if (!postId) return
+    setTogglingParticipantId(memberId)
+    try {
+      const list = await partyApi.toggleTempParticipant(postId, memberId)
+      setSelectedParticipantIds(list)
+    } catch (e: unknown) {
+      const err = e as { message?: string; error?: string }
+      toast({ title: "참가자 선택 실패", description: err?.message || err?.error, variant: "destructive" })
+    } finally {
+      setTogglingParticipantId(null)
+    }
   }
 
   const handleConfirmParty = async (): Promise<boolean> => {
@@ -261,8 +274,8 @@ export default function PostDetailPage() {
                         <div>
                           <p className="font-semibold">
                             {isAnonymous ? "익명" : authorName}
-                            {post?.author?.roomName && (
-                              <span className="font-normal text-muted-foreground ml-1">· {post.author.roomName}</span>
+                            {!isAnonymous && post?.author?.roomId != null && (
+                              <span className="font-normal text-muted-foreground ml-1">· {post.author.roomId} 분반</span>
                             )}
                           </p>
                           <p className="text-sm text-muted-foreground">{formatDate(post.createdAt)}</p>
@@ -409,8 +422,8 @@ export default function PostDetailPage() {
                               <div className="flex items-center shrink-0">
                                 <Checkbox
                                   checked={isSelected}
-                                  onCheckedChange={() => c.memberId != null && toggleParticipant(c.memberId)}
-                                  disabled={!isSelected && !canAddMore}
+                                  onCheckedChange={() => c.memberId != null && handleToggleParticipant(c.memberId)}
+                                  disabled={(!isSelected && !canAddMore) || togglingParticipantId === c.memberId}
                                   className="border-primary data-[state=checked]:bg-primary"
                                 />
                               </div>
@@ -426,8 +439,8 @@ export default function PostDetailPage() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-semibold">{c.isAnonymous ? "익명" : c.authorNickname}</span>
                                 {isSelected && <Badge className="bg-primary text-primary-foreground text-xs">참가자</Badge>}
-                                {!c.isAnonymous && c.roomName && (
-                                  <span className="text-xs text-muted-foreground">· {c.roomName}</span>
+                                {!c.isAnonymous && c.roomId != null && (
+                                  <span className="text-xs text-muted-foreground">· {c.roomId} 분반</span>
                                 )}
                                 <span className="text-sm text-muted-foreground">{formatDate(c.createdAt)}</span>
                               </div>

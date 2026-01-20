@@ -452,6 +452,14 @@ export const roomApi = {
 // ========== Party APIs ==========
 
 export const partyApi = {
+  /** 댓글 작성자를 임시 참가자로 토글. DB 저장, 중복 미허용. */
+  toggleTempParticipant: (postId: number, memberId: number): Promise<number[]> => {
+    return apiRequest<number[]>(`/api/party/${postId}/temp-participants/toggle`, {
+      method: 'POST',
+      body: JSON.stringify({ memberId }),
+    });
+  },
+
   // Confirm party
   confirmParty: (postId: number, selectedMemberIds: number[]): Promise<number> => {
     return apiRequest<number>(`/api/party/${postId}/confirm`, {

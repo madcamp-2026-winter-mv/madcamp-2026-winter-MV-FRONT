@@ -67,8 +67,8 @@ export interface AuthorDto {
   anonymous?: boolean;
   isAnonymous?: boolean;
   imageUrl?: string;
-  /** 글쓴이 분반명 */
-  roomName?: string;
+  /** 글쓴이 분반 ID. 익명이면 없음. 표시: "{roomId} 분반" */
+  roomId?: number;
 }
 
 export interface PartyInfoDto {
@@ -85,8 +85,8 @@ export interface CommentResponseDto {
   authorNickname: string;
   createdAt: string; // ISO 8601 format
   isAnonymous?: boolean;
-  /** 댓글 작성자 분반명 (익명이면 없음) */
-  roomName?: string;
+  /** 댓글 작성자 분반 ID. 익명이면 없음. 표시: "{roomId} 분반" */
+  roomId?: number;
 }
 
 export interface VoteResponse {
@@ -117,6 +117,8 @@ export interface PostResponseDto {
   voted?: boolean;
   isVoted?: boolean;
   isAuthor?: boolean;
+  /** 팟 작성자일 때만. 임시 참가자(선택된 댓글 작성자) memberId 목록. */
+  tempParticipantIds?: number[];
 }
 
 export interface MemberResponseDto {
