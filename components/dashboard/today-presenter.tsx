@@ -35,7 +35,7 @@ export function TodayPresenter({ roomId }: TodayPresenterProps) {
       <CardHeader className="pb-2 bg-linear-to-r from-primary/20 to-primary/5">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Mic2 className="h-4 w-4 text-primary" />
-          스크럼 발표자
+          스크럼 진행자
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-4">
@@ -57,7 +57,7 @@ export function TodayPresenter({ roomId }: TodayPresenterProps) {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-6 text-muted-foreground text-sm">
-            {message || "현재 선정된 발표자가 없습니다."}
+            {message || "현재 선정된 진행자가 없습니다."}
           </div>
         )}
       </CardContent>

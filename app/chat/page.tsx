@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Send, Users, ArrowLeft, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { chatApi, getChatWsUrl, memberApi } from "@/lib/api/api"
+import { chatApi, getChatWsUrl, memberApi, partyApi } from "@/lib/api/api"
 import type { ChatRoomResponseDto, ChatMessageDto } from "@/lib/api/types"
 import { Suspense } from "react"
 
@@ -90,7 +90,7 @@ function ChatContent() {
     return () => { mounted = false }
   }, [])
 
-  // 방 선택 시: 메시지 로드 + STOMP 구독
+  // 방 선택 시: 읽음 처리 + 메시지 로드 + STOMP 구독
   const connectAndSubscribe = useCallback(
     async (roomId: number) => {
       // 기존 구독 해제
@@ -103,6 +103,15 @@ function ChatContent() {
         stompRef.current = null
       }
       setWsConnected(false)
+
+      // 알람3: 입장 시 읽음 처리(미읽음 0)
+      partyApi.markChatRoomAsRead(roomId).then(() => {
+        setRooms((prev) =>
+          prev.map((r) =>
+            r.chatRoomId === roomId ? { ...r, unreadCount: 0 } : r
+          )
+        )
+      }).catch(() => {})
 
       setMessagesLoading(true)
       try {
@@ -228,15 +237,20 @@ function ChatContent() {
                         )}
                       >
                         <div className="flex items-start gap-3">
-                          <Avatar>
+                          <Avatar className="relative shrink-0">
                             <AvatarFallback className="bg-primary/20 text-primary">
                               {room.roomName.slice(0, 2)}
                             </AvatarFallback>
+                            {(room.unreadCount ?? 0) > 0 && (
+                              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 flex items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
+                                {room.unreadCount! > 99 ? "99+" : room.unreadCount}
+                              </span>
+                            )}
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-2">
                               <span className="font-medium truncate">{room.roomName}</span>
-                              <span className="text-xs text-muted-foreground shrink-0 ml-1">
+                              <span className="text-xs text-muted-foreground shrink-0">
                                 {formatRoomTime(room.createdAt)}
                               </span>
                             </div>

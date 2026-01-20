@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
@@ -8,87 +8,151 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MessageSquare, Heart, Users, Calendar, Bell, Check, Trash2 } from "lucide-react"
+import { MessageSquare, Users, Bell, Check, Trash2 } from "lucide-react"
+import { notificationApi } from "@/lib/api/api"
+import type { NotificationResponseDto } from "@/lib/api/types"
 
-const mockNotifications = [
-  {
-    id: 1,
-    type: "comment",
-    title: "새 댓글",
-    message: "이코딩님이 회원님의 글에 댓글을 남겼습니다.",
-    link: "/community/1",
-    createdAt: "5분 전",
-    isRead: false,
-  },
-  {
-    id: 2,
-    type: "like",
-    title: "좋아요",
-    message: "박개발님이 회원님의 글을 좋아합니다.",
-    link: "/community/1",
-    createdAt: "30분 전",
-    isRead: false,
-  },
-  {
-    id: 3,
-    type: "team",
-    title: "팟 모집",
-    message: "신청하신 '2주차 프로젝트 팀원 모집'에 수락되었습니다.",
-    link: "/community/2",
-    createdAt: "1시간 전",
-    isRead: true,
-  },
-  {
-    id: 4,
-    type: "schedule",
-    title: "일정 알림",
-    message: "내일 10:00 AM에 '4주차 발표'가 예정되어 있습니다.",
-    link: "/",
-    createdAt: "2시간 전",
-    isRead: true,
-  },
-  {
-    id: 5,
-    type: "comment",
-    title: "새 댓글",
-    message: "최협업님이 회원님의 글에 댓글을 남겼습니다.",
-    link: "/community/3",
-    createdAt: "어제",
-    isRead: true,
-  },
-]
+const ALLOWED_TYPES = ["COMMENT", "CHAT_INVITE"]
 
-const getIcon = (type: string) => {
+function formatTimeAgo(iso: string) {
+  try {
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return iso
+    const s = Math.floor((Date.now() - d.getTime()) / 1000)
+    if (s < 60) return "방금 전"
+    if (s < 3600) return `${Math.floor(s / 60)}분 전`
+    if (s < 86400) return `${Math.floor(s / 3600)}시간 전`
+    if (s < 604800) return `${Math.floor(s / 86400)}일 전`
+    return d.toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })
+  } catch {
+    return iso
+  }
+}
+
+function getIcon(type?: string) {
   switch (type) {
-    case "comment":
+    case "COMMENT":
       return <MessageSquare className="h-5 w-5" />
-    case "like":
-      return <Heart className="h-5 w-5" />
-    case "team":
+    case "CHAT_INVITE":
       return <Users className="h-5 w-5" />
-    case "schedule":
-      return <Calendar className="h-5 w-5" />
     default:
       return <Bell className="h-5 w-5" />
   }
 }
 
-export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState(mockNotifications)
+function getTitle(type?: string) {
+  switch (type) {
+    case "COMMENT":
+      return "새 댓글"
+    case "CHAT_INVITE":
+      return "팟 모집"
+    default:
+      return "알림"
+  }
+}
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length
+export default function NotificationsPage() {
+  const [notifications, setNotifications] = useState<NotificationResponseDto[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchList = useCallback(() => {
+    setLoading(true)
+    notificationApi
+      .getMyNotifications()
+      .then((list) =>
+        setNotifications(
+          (Array.isArray(list) ? list : []).filter(
+            (n) => !n.type || ALLOWED_TYPES.includes(n.type)
+          )
+        )
+      )
+      .catch(() => setNotifications([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    fetchList()
+  }, [fetchList])
+
+  const isRead = (n: NotificationResponseDto) => (n.isRead ?? n.read) === true
+
+  const unreadCount = notifications.filter((n) => !isRead(n)).length
 
   const handleMarkAsRead = (id: number) => {
-    setNotifications(notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
-  }
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, isRead: true })))
+    notificationApi
+      .markAsRead(id)
+      .then(() =>
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.notificationId === id ? { ...n, isRead: true, read: true } : n
+          )
+        )
+      )
+      .catch(() => {})
   }
 
   const handleDelete = (id: number) => {
-    setNotifications(notifications.filter((n) => n.id !== id))
+    notificationApi
+      .deleteNotification(id)
+      .then(() =>
+        setNotifications((prev) => prev.filter((n) => n.notificationId !== id))
+      )
+      .catch(() => {})
   }
+
+  const list = notifications
+  const listUnread = list.filter((n) => !isRead(n))
+
+  const renderItem = (n: NotificationResponseDto) => (
+    <div
+      key={n.notificationId}
+      className={`flex items-start gap-4 rounded-lg border border-border p-4 transition-colors ${
+        !isRead(n) ? "bg-primary/5" : ""
+      }`}
+    >
+      <div
+        className={`rounded-full p-2 ${
+          !isRead(n) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+        }`}
+      >
+        {getIcon(n.type)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold">{getTitle(n.type)}</span>
+          {!isRead(n) && <span className="h-2 w-2 rounded-full bg-primary shrink-0" />}
+        </div>
+        <p className="text-sm text-foreground">{n.content}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{formatTimeAgo(n.createdAt)}</p>
+      </div>
+      <div className="flex gap-1 shrink-0">
+        {!isRead(n) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleMarkAsRead(n.notificationId)}
+            title="읽음 처리"
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+        )}
+        <Link href={n.url}>
+          <Button variant="ghost" size="sm">
+            보기
+          </Button>
+        </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground hover:text-destructive"
+          onClick={() => handleDelete(n.notificationId)}
+          title="삭제"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-background">
@@ -103,12 +167,10 @@ export default function NotificationsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <CardTitle>알림</CardTitle>
-                  {unreadCount > 0 && <Badge variant="destructive">{unreadCount}개 읽지 않음</Badge>}
+                  {unreadCount > 0 && (
+                    <Badge variant="destructive">{unreadCount}개 읽지 않음</Badge>
+                  )}
                 </div>
-                <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
-                  <Check className="mr-2 h-4 w-4" />
-                  모두 읽음 처리
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -119,98 +181,28 @@ export default function NotificationsPage() {
                 </TabsList>
 
                 <TabsContent value="all" className="space-y-2">
-                  {notifications.length === 0 ? (
+                  {loading ? (
+                    <div className="py-12 text-center text-muted-foreground">
+                      로딩 중...
+                    </div>
+                  ) : list.length === 0 ? (
                     <div className="py-12 text-center text-muted-foreground">
                       <Bell className="mx-auto mb-4 h-12 w-12" />
                       <p>알림이 없습니다</p>
                     </div>
                   ) : (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`flex items-start gap-4 rounded-lg border border-border p-4 transition-colors ${
-                          !notification.isRead ? "bg-primary/5" : ""
-                        }`}
-                      >
-                        <div
-                          className={`rounded-full p-2 ${
-                            !notification.isRead
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          {getIcon(notification.type)}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold">{notification.title}</span>
-                            {!notification.isRead && <span className="h-2 w-2 rounded-full bg-primary" />}
-                          </div>
-                          <p className="text-sm text-foreground">{notification.message}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{notification.createdAt}</p>
-                        </div>
-                        <div className="flex gap-1">
-                          <Link href={notification.link}>
-                            <Button variant="ghost" size="sm" onClick={() => handleMarkAsRead(notification.id)}>
-                              보기
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDelete(notification.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
+                    list.map(renderItem)
                   )}
                 </TabsContent>
 
                 <TabsContent value="unread" className="space-y-2">
-                  {notifications.filter((n) => !n.isRead).length === 0 ? (
+                  {listUnread.length === 0 ? (
                     <div className="py-12 text-center text-muted-foreground">
                       <Check className="mx-auto mb-4 h-12 w-12" />
                       <p>모든 알림을 확인했습니다</p>
                     </div>
                   ) : (
-                    notifications
-                      .filter((n) => !n.isRead)
-                      .map((notification) => (
-                        <div
-                          key={notification.id}
-                          className="flex items-start gap-4 rounded-lg border border-border bg-primary/5 p-4"
-                        >
-                          <div className="rounded-full bg-primary p-2 text-primary-foreground">
-                            {getIcon(notification.type)}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">{notification.title}</span>
-                              <span className="h-2 w-2 rounded-full bg-primary" />
-                            </div>
-                            <p className="text-sm text-foreground">{notification.message}</p>
-                            <p className="mt-1 text-xs text-muted-foreground">{notification.createdAt}</p>
-                          </div>
-                          <div className="flex gap-1">
-                            <Link href={notification.link}>
-                              <Button variant="ghost" size="sm" onClick={() => handleMarkAsRead(notification.id)}>
-                                보기
-                              </Button>
-                            </Link>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-muted-foreground hover:text-destructive"
-                              onClick={() => handleDelete(notification.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))
+                    listUnread.map(renderItem)
                   )}
                 </TabsContent>
               </Tabs>

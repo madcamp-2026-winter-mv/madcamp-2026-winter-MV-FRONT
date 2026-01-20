@@ -3,12 +3,14 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Home, MessageSquare, User, Settings, LogOut, Bell, Shield, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+
 import { useAuth } from "@/hooks/use-auth"
+import { notificationApi } from "@/lib/api/api"
 
 const navItems = [
   { href: "/dashboard", icon: Home, label: "대시보드" },
@@ -22,6 +24,11 @@ export function DesktopSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useAuth()
+  const [sidebarUnread, setSidebarUnread] = useState(0)
+
+  useEffect(() => {
+    notificationApi.getSidebarUnreadCount().then(setSidebarUnread).catch(() => setSidebarUnread(0))
+  }, [pathname])
 
   const handleLogout = async () => {
     await logout()
@@ -65,10 +72,6 @@ export function DesktopSidebar() {
                 >
                   <item.icon className="h-5 w-5" />
                   {item.label}
-                  {item.href === "/community" && (
-                    <Badge className="ml-auto bg-destructive text-destructive-foreground">3</Badge>
-                  )}
-                  {item.href === "/chat" && <Badge className="ml-auto bg-primary text-primary-foreground">2</Badge>}
                 </Button>
               </Link>
             )
@@ -86,7 +89,9 @@ export function DesktopSidebar() {
             >
               <Bell className="h-5 w-5" />
               알림
-              <Badge className="ml-auto bg-primary text-primary-foreground">2</Badge>
+              {sidebarUnread > 0 && (
+                <span className="ml-auto h-2 w-3 rounded-full bg-amber-500" aria-label="읽지 않은 알림" />
+              )}
             </Button>
           </Link>
           <Link href="/settings">

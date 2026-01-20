@@ -154,7 +154,11 @@ export interface NotificationResponseDto {
   notificationId: number;
   content: string;
   url: string;
-  read: boolean;
+  /** "COMMENT" | "CHAT_INVITE" */
+  type?: string;
+  /** @deprecated use isRead */
+  read?: boolean;
+  isRead?: boolean;
   createdAt: string; // ISO 8601 format
 }
 
@@ -172,6 +176,8 @@ export interface ChatRoomResponseDto {
   postTitle?: string;
   createdAt: string;
   participantCount?: number;
+  /** 알람3: 해당 채팅방의 내 미읽음 메시지 개수 */
+  unreadCount?: number;
 }
 
 export interface Advertisement {

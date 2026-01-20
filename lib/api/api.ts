@@ -398,26 +398,34 @@ export const categoryApi = {
 // ========== Notification APIs ==========
 
 export const notificationApi = {
-  // Get my notifications
   getMyNotifications: (): Promise<NotificationResponseDto[]> => {
     return apiRequest<NotificationResponseDto[]>('/api/notifications');
   },
 
-  // Subscribe to notifications (SSE)
+  /** 사이드바 '알림' 배지용. COMMENT+CHAT_INVITE만, 개수. 0이면 노란 타원 미표시. */
+  getSidebarUnreadCount: (): Promise<number> => {
+    return apiRequest<number>('/api/notifications/unread-count/sidebar');
+  },
+
   subscribe: (): EventSource => {
     return new EventSource(`${API_BASE_URL}/api/notifications/subscribe`, {
       withCredentials: true,
     });
   },
 
-  // Click notification
   clickNotification: (notificationId: number): Promise<string> => {
     return apiRequest<string>(`/api/notifications/${notificationId}/click`, {
       method: 'POST',
     });
   },
 
-  // Delete notification
+  /** 알림 개별 읽음 처리 (이동 없음) */
+  markAsRead: (notificationId: number): Promise<void> => {
+    return apiRequest<void>(`/api/notifications/${notificationId}/read`, {
+      method: 'PATCH',
+    });
+  },
+
   deleteNotification: (notificationId: number): Promise<void> => {
     return apiRequest<void>(`/api/notifications/${notificationId}`, {
       method: 'DELETE',
@@ -445,7 +453,7 @@ export const chatApi = {
 // ========== Room APIs ==========
 
 export const roomApi = {
-  // GET /api/rooms/{roomId}/presenter — 현재 발표자 조회
+  // GET /api/rooms/{roomId}/presenter — 현재 진행자 조회
   getCurrentPresenter: (roomId: number): Promise<CurrentPresenterResponse> => {
     return apiRequest<CurrentPresenterResponse>(`/api/rooms/${roomId}/presenter`);
   },
@@ -542,6 +550,13 @@ export const partyApi = {
   leaveOrKickMember: (chatRoomId: number, memberId: number): Promise<void> => {
     return apiRequest<void>(`/api/party/rooms/${chatRoomId}/members/${memberId}`, {
       method: 'DELETE',
+    });
+  },
+
+  /** 채팅방 입장 시 읽음 처리 (미읽음 카운트 0) */
+  markChatRoomAsRead: (chatRoomId: number): Promise<void> => {
+    return apiRequest<void>(`/api/party/rooms/${chatRoomId}/read`, {
+      method: 'POST',
     });
   },
 };
