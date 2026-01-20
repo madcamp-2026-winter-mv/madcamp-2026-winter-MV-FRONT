@@ -65,10 +65,14 @@ export default function PostDetailPage() {
   const [togglingParticipantId, setTogglingParticipantId] = useState<number | null>(null)
   const [confirmingParty, setConfirmingParty] = useState(false)
   const [showChatModal, setShowChatModal] = useState(false)
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null)
+  const [editingCommentContent, setEditingCommentContent] = useState("")
+  const [commentEditSubmitting, setCommentEditSubmitting] = useState(false)
 
   const authorName = post?.author?.nickname || post?.authorNickname || "—"
   const isAnonymous = !!(post?.author?.anonymous ?? (post?.author as { isAnonymous?: boolean })?.isAnonymous)
-  const isAuthor = post?.isAuthor === true || (post?.isAuthor == null && !!(myNickname && myNickname === authorName))
+  // 백엔드가 이메일로 작성자 여부를 판별해 isAuthor 반환. 익명 글도 수정/삭제 가능.
+  const isAuthor = post?.isAuthor === true
   const comments: CommentResponseDto[] = post?.comments ?? []
   const likeCount = post?.likeCount ?? 0
   const isLiked = post?.liked ?? false
@@ -208,6 +212,40 @@ export default function PostDetailPage() {
       return false
     } finally {
       setConfirmingParty(false)
+    }
+  }
+
+  const handleCommentEditStart = (c: CommentResponseDto) => {
+    setEditingCommentId(c.commentId)
+    setEditingCommentContent(c.content)
+  }
+  const handleCommentEditCancel = () => {
+    setEditingCommentId(null)
+    setEditingCommentContent("")
+  }
+  const handleCommentEditSave = async () => {
+    if (editingCommentId == null || !editingCommentContent.trim() || commentEditSubmitting) return
+    setCommentEditSubmitting(true)
+    try {
+      await commentApi.updateComment(editingCommentId, editingCommentContent.trim())
+      handleCommentEditCancel()
+      refetch()
+    } catch (e: unknown) {
+      const err = e as { message?: string }
+      toast({ title: "댓글 수정 실패", description: err?.message, variant: "destructive" })
+    } finally {
+      setCommentEditSubmitting(false)
+    }
+  }
+  const handleCommentDelete = async (commentId: number) => {
+    if (!window.confirm("이 댓글을 삭제할까요?")) return
+    try {
+      await commentApi.deleteComment(commentId)
+      toast({ title: "댓글이 삭제되었습니다." })
+      refetch()
+    } catch (e: unknown) {
+      const err = e as { message?: string }
+      toast({ title: "댓글 삭제 실패", description: err?.message, variant: "destructive" })
     }
   }
 
@@ -450,8 +488,29 @@ export default function PostDetailPage() {
                                   <span className="text-xs text-muted-foreground">· {c.roomId} 분반</span>
                                 )}
                                 <span className="text-sm text-muted-foreground">{formatDate(c.createdAt)}</span>
+                                {c.isMine && editingCommentId !== c.commentId && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleCommentEditStart(c)}>수정</DropdownMenuItem>
+                                      <DropdownMenuItem className="text-destructive" onClick={() => handleCommentDelete(c.commentId)}>삭제</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
                               </div>
-                              <p className="mt-1 text-foreground">{c.content}</p>
+                              {editingCommentId === c.commentId ? (
+                                <div className="mt-2 space-y-2">
+                                  <Textarea value={editingCommentContent} onChange={(e) => setEditingCommentContent(e.target.value)} className="min-h-[60px]" />
+                                  <div className="flex gap-2">
+                                    <Button size="sm" onClick={handleCommentEditSave} disabled={commentEditSubmitting || !editingCommentContent.trim()}>{commentEditSubmitting ? "저장 중..." : "저장"}</Button>
+                                    <Button size="sm" variant="outline" onClick={handleCommentEditCancel} disabled={commentEditSubmitting}>취소</Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="mt-1 text-foreground">{c.content}</p>
+                              )}
                             </div>
                           </div>
                         )

@@ -265,7 +265,7 @@ export const voteApi = {
   },
 };
 
-// ========== Comment APIs (댓글 쓰기/올리기) ==========
+// ========== Comment APIs (댓글 쓰기/수정/삭제) ==========
 
 export const commentApi = {
   /**
@@ -276,6 +276,21 @@ export const commentApi = {
     return apiRequest<CommentResponseDto>(`/api/posts/${postId}/comments`, {
       method: 'POST',
       body: JSON.stringify({ content, anonymous: !!anonymous }),
+    });
+  },
+
+  /** 댓글 수정. PATCH /api/posts/comments/{commentId}, body: { content: string }. 본인만 가능(이메일 기준). */
+  updateComment: (commentId: number, content: string): Promise<CommentResponseDto> => {
+    return apiRequest<CommentResponseDto>(`/api/posts/comments/${commentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ content }),
+    });
+  },
+
+  /** 댓글 삭제. DELETE /api/posts/comments/{commentId}. 본인만 가능(이메일 기준). */
+  deleteComment: (commentId: number): Promise<string> => {
+    return apiRequest<string>(`/api/posts/comments/${commentId}`, {
+      method: 'DELETE',
     });
   },
 };
@@ -346,6 +361,21 @@ export const categoryApi = {
     return apiRequest<string>('/api/categories', {
       method: 'POST',
       body: JSON.stringify({ name }),
+    });
+  },
+
+  /** PATCH /api/categories/{categoryId} — 카테고리 수정. body: { name }. 기본 카테고리(ID 1~5)는 수정 불가. */
+  updateCategory: (categoryId: number, name: string): Promise<string> => {
+    return apiRequest<string>(`/api/categories/${categoryId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name }),
+    });
+  },
+
+  /** DELETE /api/categories/{categoryId} — 카테고리 삭제. 해당 글은 자유게시판으로 이동. 기본 카테고리(ID 1~5)는 삭제 불가. */
+  deleteCategory: (categoryId: number): Promise<string> => {
+    return apiRequest<string>(`/api/categories/${categoryId}`, {
+      method: 'DELETE',
     });
   },
 
