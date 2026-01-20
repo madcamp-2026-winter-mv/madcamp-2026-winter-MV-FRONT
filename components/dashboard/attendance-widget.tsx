@@ -1,41 +1,19 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, PlayCircle } from "lucide-react"
+import { CheckCircle2 } from "lucide-react"
 import { roomApi } from "@/lib/api/api"
 import { toast } from "@/hooks/use-toast"
 
 interface AttendanceWidgetProps {
   roomId?: number
-  role?: string
-  email?: string
 }
 
-export function AttendanceWidget({ roomId, role, email }: AttendanceWidgetProps) {
+export function AttendanceWidget({ roomId }: AttendanceWidgetProps) {
   const [hasCheckedIn, setHasCheckedIn] = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
-  const [startLoading, setStartLoading] = useState(false)
-  const [canStart, setCanStart] = useState(false)
-
-  // 운영진(OWNER/ADMIN) 또는 현재 발표자만 출석 시작 가능 → getCurrentPresenter로 발표자 여부 확인
-  useEffect(() => {
-    if (!roomId || !email) {
-      setCanStart(false)
-      return
-    }
-    const isAdminOrOwner = role === "OWNER" || role === "ADMIN"
-    if (isAdminOrOwner) {
-      setCanStart(true)
-      return
-    }
-    roomApi
-      .getCurrentPresenter(roomId)
-      .then((r) => setCanStart(r.presenterEmail === email))
-      .catch(() => setCanStart(false))
-  }, [roomId, role, email])
 
   const handleCheckIn = async () => {
     if (!roomId) return
@@ -53,24 +31,6 @@ export function AttendanceWidget({ roomId, role, email }: AttendanceWidgetProps)
       })
     } finally {
       setSubmitLoading(false)
-    }
-  }
-
-  const handleStartAttendance = async () => {
-    if (!roomId) return
-    setStartLoading(true)
-    try {
-      await roomApi.startAttendance(roomId, 5)
-      toast({ title: "출석이 5분 동안 시작되었습니다." })
-    } catch (e: unknown) {
-      const err = e as { message?: string; error?: string }
-      toast({
-        title: "출석 시작 실패",
-        description: err?.message || err?.error || "권한이 없거나 요청을 처리할 수 없습니다.",
-        variant: "destructive",
-      })
-    } finally {
-      setStartLoading(false)
     }
   }
 
@@ -100,7 +60,7 @@ export function AttendanceWidget({ roomId, role, email }: AttendanceWidgetProps)
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent>
         {!hasCheckedIn && (
           <div className="rounded-lg bg-muted/50 p-3 border border-border">
             <Button
@@ -112,30 +72,6 @@ export function AttendanceWidget({ roomId, role, email }: AttendanceWidgetProps)
             </Button>
           </div>
         )}
-
-        {canStart && (
-          <div className="rounded-lg bg-muted/50 p-3 border border-border">
-            <p className="text-sm text-muted-foreground mb-2">운영진/발표자: 출석을 시작할 수 있습니다.</p>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleStartAttendance}
-              disabled={startLoading}
-            >
-              <PlayCircle className="h-4 w-4 mr-2" />
-              {startLoading ? "처리 중..." : "출석 시작 (5분)"}
-            </Button>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">우리 분반 출석</span>
-            <span className="font-semibold">—/— 명</span>
-          </div>
-          <Progress value={0} className="h-3" />
-          <p className="text-xs text-muted-foreground text-center">출석률 정보는 운영진 화면에서 확인할 수 있습니다.</p>
-        </div>
       </CardContent>
     </Card>
   )

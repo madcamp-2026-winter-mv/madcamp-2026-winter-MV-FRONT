@@ -8,7 +8,6 @@ import { AttendanceWidget } from "@/components/dashboard/attendance-widget"
 import { TodaySchedule } from "@/components/dashboard/today-schedule"
 import { TodayPresenter } from "@/components/dashboard/today-presenter"
 import { HotPosts } from "@/components/dashboard/hot-posts"
-import { QuickLinks } from "@/components/dashboard/quick-links"
 import { useAuth } from "@/hooks/use-auth"
 import { memberApi } from "@/lib/api/api"
 import type { MemberResponseDto } from "@/lib/api/types"
@@ -54,7 +53,7 @@ export default function DashboardPage() {
           {/* 상단 영역: 출석 + 일정 */}
           <div className="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
             <div className="xl:col-span-2">
-              <AttendanceWidget roomId={myInfo?.roomId} role={myInfo?.role} email={myInfo?.email} />
+              <AttendanceWidget roomId={myInfo?.roomId} />
             </div>
             <div>
               <TodaySchedule roomId={myInfo?.roomId} />
@@ -67,10 +66,6 @@ export default function DashboardPage() {
             <HotPosts />
           </div>
 
-          {/* 하단 영역: 빠른 링크 */}
-          <div className="grid grid-cols-1 gap-6">
-            <QuickLinks />
-          </div>
         </main>
       </div>
     </div>

@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Mic2, Sparkles } from "lucide-react"
+import { Mic2 } from "lucide-react"
 import { roomApi } from "@/lib/api/api"
 import type { CurrentPresenterResponse } from "@/lib/api/types"
 
@@ -49,25 +48,12 @@ export function TodayPresenter({ roomId }: TodayPresenterProps) {
             분반에 가입해 주세요.
           </div>
         ) : hasPresenter ? (
-          <div className="flex flex-col items-center text-center space-y-3">
-            <div className="relative">
-              <Avatar className="h-20 w-20 border-4 border-primary">
-                <AvatarImage src="/placeholder.svg" alt={data.presenterNickname!} />
-                <AvatarFallback className="bg-primary/20 text-primary text-lg font-bold">
-                  {data.presenterNickname!.slice(0, 2)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="absolute -top-1 -right-1 rounded-full bg-primary p-1">
-                <Sparkles className="h-4 w-4 text-primary-foreground" />
-              </div>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">오늘의 스크럼 진행자는</p>
-              <p className="text-lg font-bold text-foreground mt-1">
-                {data.presenterNickname}
-                <span className="text-primary">님</span>입니다!
-              </p>
-            </div>
+          <div className="flex flex-col items-center text-center">
+            <p className="text-sm text-muted-foreground">오늘의 스크럼 진행자는</p>
+            <p className="text-lg font-bold text-foreground mt-1">
+              {data.presenterNickname}
+              <span className="text-primary">님</span>입니다!
+            </p>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-6 text-muted-foreground text-sm">

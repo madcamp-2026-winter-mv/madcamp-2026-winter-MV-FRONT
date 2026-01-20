@@ -121,7 +121,7 @@ export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
           <div className="flex flex-col items-center text-center">
             <div className="relative">
               <Avatar className="h-24 w-24 border-4 border-primary">
-                <AvatarImage src={member.profileImage || "/placeholder.svg"} alt={member.nickname} />
+                <AvatarImage src={member.profileImage} alt={member.nickname} />
                 <AvatarFallback className="bg-primary/20 text-primary text-xl font-bold">
                   {String(member.nickname).slice(-2)}
                 </AvatarFallback>
@@ -141,9 +141,9 @@ export function ProfileCard({ member, onUpdate }: ProfileCardProps) {
             <p className="text-sm text-muted-foreground">{member.realName}</p>
             <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
 
-            {member.roomName && (
+            {member.roomId && (
               <Badge variant="outline" className="mt-3 border-primary/50 text-primary">
-                {member.roomName}
+                {member.roomId} 분반
               </Badge>
             )}
 
