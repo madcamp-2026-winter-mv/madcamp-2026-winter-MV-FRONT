@@ -115,8 +115,8 @@ export default function PostDetailPage() {
           setSelectedParticipantIds(Array.isArray(p.tempParticipantIds) ? p.tempParticipantIds : [])
         }
       })
-      .catch((e: { message?: string; error?: string }) => {
-        if (mounted) setError(e?.message || e?.error || "글을 불러오지 못했습니다.")
+      .catch((e: { message?: string }) => {
+        if (mounted) setError(e?.message || "글을 불러오지 못했습니다.")
       })
       .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }

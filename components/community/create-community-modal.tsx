@@ -10,6 +10,9 @@ import { categoryApi } from "@/lib/api/api"
 import type { CategoryDto } from "@/lib/api/types"
 import { toast } from "@/hooks/use-toast"
 
+/** 기본 카테고리(자유, 질문, 팟모집, 정보공유, 채용공고)는 관리(수정/삭제) 대상에서 제외. 유저 생성 카테고리만 노출. */
+const DEFAULT_CATEGORY_NAMES = ["자유", "질문", "팟모집", "정보공유", "채용공고"]
+
 interface CreateCommunityModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -31,6 +34,9 @@ export function CreateCommunityModal({ open, onOpenChange, onSuccess }: CreateCo
   const fetchCategories = () => {
     categoryApi.getAllCategories().then((list) => setCategories(Array.isArray(list) ? list : [])).catch(() => setCategories([]))
   }
+
+  /** 기본 5개 제외, 유저가 생성한 카테고리만 관리 대상 */
+  const manageableCategories = categories.filter((c) => !DEFAULT_CATEGORY_NAMES.includes(c.name))
 
   useEffect(() => {
     if (open) {
@@ -130,11 +136,11 @@ export function CreateCommunityModal({ open, onOpenChange, onSuccess }: CreateCo
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {categories.length > 0 && (
+          {manageableCategories.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-foreground">기존 카테고리</Label>
+              <Label className="text-foreground">기존 카테고리 (수정/삭제)</Label>
               <div className="max-h-32 overflow-y-auto rounded-lg border border-border p-2 space-y-1.5">
-                {categories.map((c) =>
+                {manageableCategories.map((c) =>
                   editingCategoryId === c.categoryId ? (
                     <div key={c.categoryId} className="flex items-center gap-2">
                       <Input

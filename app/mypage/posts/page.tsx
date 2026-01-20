@@ -76,7 +76,7 @@ export default function MyPostsPage() {
                           </div>
                           <div className="flex items-center gap-3 text-sm text-muted-foreground shrink-0">
                             <span className="flex items-center gap-1"><Heart className="h-4 w-4" />{post.likeCount ?? 0}</span>
-                            <span className="flex items-center gap-1"><MessageSquare className="h-4 w-4" />{post.comments?.length ?? 0}</span>
+                            <span className="flex items-center gap-1"><MessageSquare className="h-4 w-4" />{post.commentCount ?? post.comments?.length ?? 0}</span>
                           </div>
                         </div>
                       </div>

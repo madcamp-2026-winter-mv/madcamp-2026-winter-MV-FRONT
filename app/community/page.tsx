@@ -61,7 +61,7 @@ export default function CommunityPage() {
                   )}
                   <Button onClick={() => setIsCreateModalOpen(true)} variant="outline" className="bg-transparent">
                     <Plus className="h-4 w-4 mr-2" />
-                    커뮤니티 생성
+                    커뮤니티 관리
                   </Button>
                 </div>
               </div>
