@@ -464,12 +464,12 @@ export default function PostDetailPage() {
                           참가자
                         </h3>
                         <Badge className="bg-primary text-primary-foreground">
-                          {isAuthor && isRecruiting ? 1 + selectedParticipantIds.length : currentCount}/{maxCount}
+                          {isRecruiting ? 1 + selectedParticipantIds.length : currentCount}/{maxCount}
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {/* 참가자 목록: 작성자 + (글쓴이만) 선택된 댓글 작성자 */}
+                      {/* 참가자 목록: 작성자 + (모집중일 때) 선택된 댓글 작성자 — 작성자/방문자 모두 노출 */}
                       <div className="space-y-2">
                         <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
                           <Avatar className="h-8 w-8 shrink-0">
@@ -478,7 +478,7 @@ export default function PostDetailPage() {
                           <span className="flex-1 text-sm font-medium">{authorName}</span>
                           <Badge variant="outline" className="text-xs">작성자</Badge>
                         </div>
-                        {isAuthor && isRecruiting && selectedParticipantIds.map((mid) => {
+                        {isRecruiting && selectedParticipantIds.map((mid) => {
                           const c = comments.find((x) => x.memberId === mid)
                           const nick = c?.authorNickname ?? "?"
                           return (
@@ -491,8 +491,8 @@ export default function PostDetailPage() {
                             </div>
                           )
                         })}
-                        {/* 빈 슬롯 */}
-                        {Array.from({ length: Math.max(0, maxCount - 1 - (isAuthor && isRecruiting ? selectedParticipantIds.length : Math.max(0, currentCount - 1))) }).map((_, i) => (
+                        {/* 빈 슬롯 (모집중일 때, 작성자/방문자 동일한 기준) */}
+                        {isRecruiting && Array.from({ length: Math.max(0, maxCount - 1 - selectedParticipantIds.length) }).map((_, i) => (
                           <div key={`empty-${i}`} className="flex items-center gap-3 p-2 rounded-lg border border-dashed border-border">
                             <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
                               <span className="text-muted-foreground text-xs">?</span>
