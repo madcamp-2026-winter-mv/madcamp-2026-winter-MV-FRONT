@@ -448,7 +448,7 @@ export default function AdminPage() {
                       <TableBody>
                         {attendanceList.map((m) => (
                           <TableRow key={m.email}>
-                            <TableCell className="font-medium">{m.realName || m.nickname}</TableCell>
+                            <TableCell className="font-medium">{m.nickname || m.realName}</TableCell>
                             <TableCell>{m.email}</TableCell>
                             <TableCell>
                               <Badge variant={(m.attendanceRate ?? 0) >= 90 ? "default" : "secondary"}>
@@ -477,10 +477,10 @@ export default function AdminPage() {
                     {selectedPresenter ? (
                       <div className="text-center">
                         <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-primary text-4xl font-bold text-primary-foreground">
-                          {(selectedPresenter.realName || selectedPresenter.nickname || "?").charAt(0)}
+                          {(selectedPresenter.nickname || selectedPresenter.realName || "?").charAt(0)}
                         </div>
                         <p className="text-2xl font-bold text-foreground">
-                          {selectedPresenter.realName || selectedPresenter.nickname}
+                          {selectedPresenter.nickname || selectedPresenter.realName}
                         </p>
                         <p className="text-muted-foreground">오늘의 스크럼 발표자입니다!</p>
                       </div>
@@ -510,7 +510,7 @@ export default function AdminPage() {
                             }
                             className="px-3 py-1"
                           >
-                            {m.realName || m.nickname}
+                            {m.nickname || m.realName}
                           </Badge>
                         ))}
                       </div>
@@ -550,7 +550,7 @@ export default function AdminPage() {
                       <TableBody>
                         {membersForManagement.map((m) => (
                           <TableRow key={m.email}>
-                            <TableCell className="font-medium">{m.realName || m.nickname}</TableCell>
+                            <TableCell className="font-medium">{m.nickname || m.realName}</TableCell>
                             <TableCell>{m.email}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
@@ -580,7 +580,7 @@ export default function AdminPage() {
                                   <DialogHeader>
                                     <DialogTitle>멤버 강제 탈퇴</DialogTitle>
                                     <DialogDescription>
-                                      정말 {m.realName || m.nickname}님을 분반에서 탈퇴시키겠습니까? 이 작업은 되돌릴 수 없습니다.
+                                      정말 {m.nickname || m.realName}님을 분반에서 탈퇴시키겠습니까? 이 작업은 되돌릴 수 없습니다.
                                     </DialogDescription>
                                   </DialogHeader>
                                   <DialogFooter>
