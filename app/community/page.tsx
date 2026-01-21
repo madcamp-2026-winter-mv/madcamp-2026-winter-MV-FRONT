@@ -36,6 +36,18 @@ export default function CommunityPage() {
     setIsWriteModalOpen(true)
   }
 
+  const handleCreateModalClick = () => {
+    if (user?.roomId == null) {
+      toast({
+        title: "분반 가입 필요",
+        description: "분반에 가입 후 이용할 수 있습니다. 대시보드에서 초대 코드로 분반에 가입해주세요.",
+        variant: "destructive",
+      })
+      return
+    }
+    setIsCreateModalOpen(true)
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <DesktopSidebar />
@@ -59,7 +71,7 @@ export default function CommunityPage() {
                       {isPartyTab ? "팟 모집하기" : "새 글 작성"}
                     </Button>
                   )}
-                  <Button onClick={() => setIsCreateModalOpen(true)} variant="outline" className="bg-transparent">
+                  <Button onClick={handleCreateModalClick} variant="outline" className="bg-transparent">
                     <Plus className="h-4 w-4 mr-2" />
                     커뮤니티 관리
                   </Button>
