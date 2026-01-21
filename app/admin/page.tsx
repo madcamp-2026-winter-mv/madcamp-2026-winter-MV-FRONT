@@ -190,7 +190,7 @@ export default function AdminPage() {
       setSelectedPresenter(picked)
       await refetchAttendance()
     } catch (e: any) {
-      setError(e?.message ?? e?.error ?? "진행행자 선정에 실패했습니다.")
+      setError(e?.message ?? e?.error ?? "진행자 선정에 실패했습니다.")
     } finally {
       setPresenterLoading(false)
     }
@@ -520,12 +520,12 @@ export default function AdminPage() {
                         <p className="text-2xl font-bold text-foreground">
                           {selectedPresenter.nickname || selectedPresenter.realName}
                         </p>
-                        <p className="text-muted-foreground">오늘의 스크럼 진행행자입니다!</p>
+                        <p className="text-muted-foreground">오늘의 스크럼 진행자입니다!</p>
                       </div>
                     ) : (
                       <div className="text-center text-muted-foreground">
                         <Shuffle className="mx-auto mb-4 h-16 w-16" />
-                        <p>버튼을 눌러 진행행자를 선정하세요</p>
+                        <p>버튼을 눌러 진행자를 선정하세요</p>
                       </div>
                     )}
                     <Button size="lg" onClick={handlePickPresenter} disabled={presenterLoading}>

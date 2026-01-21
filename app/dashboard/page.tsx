@@ -60,7 +60,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 중간 영역: 진행행자 + HOT 게시글 */}
+          {/* 중간 영역: 진행자 + HOT 게시글 */}
           <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <TodayPresenter roomId={myInfo?.roomId} />
             <HotPosts />
