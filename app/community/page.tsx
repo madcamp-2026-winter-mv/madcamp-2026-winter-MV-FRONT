@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
+import { ContentArea } from "@/components/layout/sidebar-context"
 import { CommunityList } from "@/components/community/community-list"
 import { CategoryTabs } from "@/components/community/category-tabs"
 import { CreateCommunityModal } from "@/components/community/create-community-modal"
@@ -52,7 +53,7 @@ export default function CommunityPage() {
     <div className="min-h-screen bg-background">
       <DesktopSidebar />
 
-      <div className="ml-64">
+      <ContentArea>
         <DesktopHeader title="커뮤니티" />
 
         <main className="p-6">
@@ -87,21 +88,21 @@ export default function CommunityPage() {
             </div>
 
             <div className="space-y-6">
-              <Card className="border-dashed border-2 border-muted-foreground/30">
-                <CardContent className="flex items-center justify-center h-48 text-muted-foreground">
-                  <span className="text-sm">광고 영역</span>
+              <Card className="overflow-hidden border border-border p-0">
+                <CardContent className="p-0">
+                  <img src="/ad_image1.jpg" alt="광고 1" className="h-48 w-full object-cover" />
                 </CardContent>
               </Card>
 
-              <Card className="border-dashed border-2 border-muted-foreground/30">
-                <CardContent className="flex items-center justify-center h-48 text-muted-foreground">
-                  <span className="text-sm">광고 영역</span>
+              <Card className="overflow-hidden border border-border p-0">
+                <CardContent className="p-0">
+                  <img src="/ad_image2.jpg" alt="광고 2" className="h-48 w-full object-cover" />
                 </CardContent>
               </Card>
             </div>
           </div>
         </main>
-      </div>
+      </ContentArea>
 
       <CreateCommunityModal
         open={isCreateModalOpen}

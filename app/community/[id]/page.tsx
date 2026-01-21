@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useRouter, useParams } from "next/navigation"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
+import { ContentArea } from "@/components/layout/sidebar-context"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -266,12 +267,12 @@ export default function PostDetailPage() {
     return (
       <div className="min-h-screen bg-background">
         <DesktopSidebar />
-        <div className="ml-64">
+        <ContentArea>
           <DesktopHeader title="게시글" />
           <main className="p-6 flex items-center justify-center min-h-[40vh]">
             <p className="text-muted-foreground">로딩 중...</p>
           </main>
-        </div>
+        </ContentArea>
       </div>
     )
   }
@@ -280,13 +281,13 @@ export default function PostDetailPage() {
     return (
       <div className="min-h-screen bg-background">
         <DesktopSidebar />
-        <div className="ml-64">
+        <ContentArea>
           <DesktopHeader title="게시글" />
           <main className="p-6">
             <Link href="/community"><Button variant="ghost" className="gap-2"><ArrowLeft className="h-4 w-4" />목록으로</Button></Link>
             <p className="mt-4 text-destructive">{error || "글을 찾을 수 없습니다."}</p>
           </main>
-        </div>
+        </ContentArea>
       </div>
     )
   }
@@ -297,7 +298,7 @@ export default function PostDetailPage() {
     <div className="min-h-screen bg-background">
       <DesktopSidebar />
 
-      <div className="ml-64">
+      <ContentArea>
         <DesktopHeader title="게시글" />
 
         <main className="p-6">
@@ -651,7 +652,7 @@ export default function PostDetailPage() {
             </div>
           </div>
         </main>
-      </div>
+      </ContentArea>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>

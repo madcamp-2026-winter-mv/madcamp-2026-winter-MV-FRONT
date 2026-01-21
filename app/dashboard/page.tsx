@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
+import { ContentArea } from "@/components/layout/sidebar-context"
 import { AttendanceWidget } from "@/components/dashboard/attendance-widget"
 import { TodaySchedule } from "@/components/dashboard/today-schedule"
 import { TodayPresenter } from "@/components/dashboard/today-presenter"
@@ -46,7 +47,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-background">
       <DesktopSidebar />
 
-      <div className="ml-64">
+      <ContentArea>
         <DesktopHeader title="대시보드" />
 
         <main className="p-6">
@@ -67,7 +68,7 @@ export default function DashboardPage() {
           </div>
 
         </main>
-      </div>
+      </ContentArea>
     </div>
   )
 }

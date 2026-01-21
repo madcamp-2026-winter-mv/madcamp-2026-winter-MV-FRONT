@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
+import { ContentArea } from "@/components/layout/sidebar-context"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -301,7 +302,7 @@ function ChatContent() {
     <div className="min-h-screen bg-background">
       <DesktopSidebar />
 
-      <div className="ml-64">
+      <ContentArea>
         <DesktopHeader title="채팅방" />
 
         <main className="p-6">
@@ -622,7 +623,7 @@ function ChatContent() {
             </Card>
           </div>
         </main>
-      </div>
+      </ContentArea>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
+import { ContentArea } from "@/components/layout/sidebar-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -160,7 +161,7 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-background">
       <DesktopSidebar />
 
-      <div className="ml-64">
+      <ContentArea>
         <DesktopHeader title="알림" />
 
         <main className="p-6">
@@ -211,7 +212,7 @@ export default function NotificationsPage() {
             </CardContent>
           </Card>
         </main>
-      </div>
+      </ContentArea>
     </div>
   )
 }

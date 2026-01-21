@@ -24,6 +24,7 @@ import { Users, Copy, Trash2, Play, Shuffle, Clock, RefreshCw } from "lucide-rea
 import { memberApi, adminApi, roomApi } from "@/lib/api/api"
 import type { MemberResponseDto, Schedule } from "@/lib/api/types"
 import { parseScheduleDate } from "@/lib/utils"
+import { ContentArea } from "@/components/layout/sidebar-context"
 
 export default function AdminPage() {
   const [member, setMember] = useState<MemberResponseDto | null>(null)
@@ -262,12 +263,12 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-background">
         <DesktopSidebar />
-        <div className="ml-64">
+        <ContentArea>
           <DesktopHeader title="관리자" />
           <main className="p-6 flex items-center justify-center min-h-[40vh]">
             <p className="text-muted-foreground">로딩 중...</p>
           </main>
-        </div>
+        </ContentArea>
       </div>
     )
   }
@@ -276,7 +277,7 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-background">
         <DesktopSidebar />
-        <div className="ml-64">
+        <ContentArea>
           <DesktopHeader title="관리자" />
           <main className="p-6">
             <Card>
@@ -287,7 +288,7 @@ export default function AdminPage() {
               </CardContent>
             </Card>
           </main>
-        </div>
+        </ContentArea>
       </div>
     )
   }
@@ -297,7 +298,7 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-background">
         <DesktopSidebar />
-        <div className="ml-64">
+        <ContentArea>
           <DesktopHeader title="관리자" />
           <main className="p-6">
             <Card>
@@ -308,7 +309,7 @@ export default function AdminPage() {
               </CardContent>
             </Card>
           </main>
-        </div>
+        </ContentArea>
       </div>
     )
   }
@@ -317,7 +318,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-background">
       <DesktopSidebar />
 
-      <div className="ml-64">
+      <ContentArea>
         <DesktopHeader title="관리자" />
 
         <main className="p-6">
@@ -769,7 +770,7 @@ export default function AdminPage() {
             </TabsContent>
           </Tabs>
         </main>
-      </div>
+      </ContentArea>
     </div>
   )
 }

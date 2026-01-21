@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { DesktopHeader } from "@/components/layout/desktop-header"
+import { ContentArea } from "@/components/layout/sidebar-context"
 import { ProfileCard } from "@/components/mypage/profile-card"
 import { ActivitySection } from "@/components/mypage/activity-section"
 import { SettingsSection } from "@/components/mypage/settings-section"
@@ -69,12 +70,12 @@ export default function MyPage() {
     return (
       <div className="min-h-screen bg-background">
         <DesktopSidebar />
-        <div className="ml-64">
+        <ContentArea>
           <DesktopHeader title="마이페이지" />
           <main className="p-6 flex items-center justify-center min-h-[40vh]">
             <p className="text-muted-foreground">로딩 중...</p>
           </main>
-        </div>
+        </ContentArea>
       </div>
     )
   }
@@ -83,7 +84,7 @@ export default function MyPage() {
     <div className="min-h-screen bg-background">
       <DesktopSidebar />
 
-      <div className="ml-64">
+      <ContentArea>
         <DesktopHeader title="마이페이지" />
 
         <main className="p-6">
@@ -134,7 +135,7 @@ export default function MyPage() {
             />
           </div>
         </main>
-      </div>
+      </ContentArea>
     </div>
   )
 }
