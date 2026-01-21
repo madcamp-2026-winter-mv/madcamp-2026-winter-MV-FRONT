@@ -28,7 +28,7 @@ export default function CommunityPage() {
     if (user?.roomId == null) {
       toast({
         title: "방 참여 필요",
-        description: "방에 참여한 후 글을 쓸 수 있습니다. 대시보드에서 초대 코드로 참여해주세요.",
+        description: "방에 참여한 후 글을 쓸 수 있습니다. 마이페이지에서 초대 코드로 참여해주세요.",
         variant: "destructive",
       })
       return
@@ -40,7 +40,7 @@ export default function CommunityPage() {
     if (user?.roomId == null) {
       toast({
         title: "분반 가입 필요",
-        description: "분반에 가입 후 이용할 수 있습니다. 대시보드에서 초대 코드로 분반에 가입해주세요.",
+        description: "분반에 가입 후 이용할 수 있습니다. 마이페이지에서 초대 코드로 분반에 가입해주세요.",
         variant: "destructive",
       })
       return

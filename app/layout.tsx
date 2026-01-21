@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "@/components/ui/toaster"
+import { SidebarProvider } from "@/components/layout/sidebar-context"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -46,9 +47,11 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={`font-sans antialiased min-h-screen`}>
-        {children}
-        <Toaster />
-        <Analytics />
+        <SidebarProvider>
+          {children}
+          <Toaster />
+          <Analytics />
+        </SidebarProvider>
       </body>
     </html>
   )
