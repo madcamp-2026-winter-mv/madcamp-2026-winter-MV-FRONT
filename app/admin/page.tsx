@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Users, Copy, Trash2, Play, Shuffle, Clock, RefreshCw } from "lucide-react"
 import { memberApi, adminApi, roomApi } from "@/lib/api/api"
 import type { MemberResponseDto, Schedule } from "@/lib/api/types"
+import { parseScheduleDate } from "@/lib/utils"
 
 export default function AdminPage() {
   const [member, setMember] = useState<MemberResponseDto | null>(null)
@@ -743,7 +744,7 @@ export default function AdminPage() {
                           <TableRow key={s.scheduleId}>
                             <TableCell className="font-medium">{s.title}</TableCell>
                             <TableCell className="whitespace-nowrap">
-                              {s.startTime ? new Date(s.startTime).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" }) : "-"}
+                              {s.startTime ? parseScheduleDate(s.startTime).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" }) : "-"}
                             </TableCell>
                             <TableCell className="max-w-[200px] truncate text-muted-foreground">{s.content || "-"}</TableCell>
                             <TableCell>{(s.important ?? s.isImportant) ? <Badge variant="secondary">중요</Badge> : "-"}</TableCell>

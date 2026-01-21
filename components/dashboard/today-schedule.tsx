@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, Star } from "lucide-react"
 import { roomApi } from "@/lib/api/api"
 import type { Schedule } from "@/lib/api/types"
+import { parseScheduleDate } from "@/lib/utils"
 
 interface TodayScheduleProps {
   roomId?: number
@@ -13,7 +14,7 @@ interface TodayScheduleProps {
 
 function formatTime(iso: string): string {
   try {
-    const d = new Date(iso)
+    const d = parseScheduleDate(iso)
     return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })
   } catch {
     return iso
@@ -22,7 +23,7 @@ function formatTime(iso: string): string {
 
 function formatTimeAgo(iso: string): string | null {
   try {
-    const d = new Date(iso)
+    const d = parseScheduleDate(iso)
     const now = new Date()
     const diffMs = d.getTime() - now.getTime()
     const diffM = Math.round(diffMs / 60000)
@@ -52,7 +53,7 @@ export function TodaySchedule({ roomId }: TodayScheduleProps) {
       .then((list) => {
         const now = Date.now()
         const upcoming = list
-          .filter((s) => new Date(s.startTime).getTime() > now)
+          .filter((s) => parseScheduleDate(s.startTime).getTime() > now)
           .slice(0, 3)
         setSchedules(upcoming)
       })
