@@ -90,13 +90,13 @@ export default function CommunityPage() {
             <div className="space-y-6">
               <Card className="overflow-hidden border border-border p-0">
                 <CardContent className="p-0">
-                  <img src="/ad_image1.jpg" alt="광고 1" className="h-48 w-full object-cover" />
+                  <img src="/ad_image1.jpg" alt="광고 1" className="block w-full h-auto" />
                 </CardContent>
               </Card>
 
               <Card className="overflow-hidden border border-border p-0">
                 <CardContent className="p-0">
-                  <img src="/ad_image2.jpg" alt="광고 2" className="h-48 w-full object-cover" />
+                  <img src="/ad_image2.jpg" alt="광고 2" className="block w-full h-auto" />
                 </CardContent>
               </Card>
             </div>
