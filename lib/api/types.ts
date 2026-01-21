@@ -129,7 +129,7 @@ export interface PostResponseDto {
   /** 팟 모집 완료 시, 현재 사용자가 그 채팅방 참가자인지. 참가자에게만 '채팅방에서 대화를 나눠보세요' 블록 노출. */
   isChatParticipant?: boolean;
   /** 팟 모집 완료 시, 채팅방 참가자 중 글쓴이 제외. 모두에게 노출. */
-  chatParticipants?: { nickname: string; imageUrl?: string | null }[];
+  chatParticipants?: { nickname: string; imageUrl?: string | null; roomId?: number }[];
 }
 
 export interface MemberResponseDto {

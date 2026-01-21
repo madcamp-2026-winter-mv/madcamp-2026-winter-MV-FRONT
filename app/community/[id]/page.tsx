@@ -331,10 +331,10 @@ export default function PostDetailPage() {
                           <p className="font-semibold">
                             {isAnonymous ? "익명" : authorName}
                             {!isAnonymous && post?.author?.roomId != null && (
-                              <span className="font-normal text-muted-foreground ml-1">· {post.author.roomId} 분반</span>
+                              <span className="text-base font-medium text-foreground ml-1">· {post.author.roomId} 분반</span>
                             )}
                           </p>
-                          <p className="text-sm text-muted-foreground">{formatDate(post.createdAt)}</p>
+                          <p className="text-xs text-muted-foreground">{formatDate(post.createdAt)}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -498,9 +498,9 @@ export default function PostDetailPage() {
                                 <span className="font-semibold">{c.isAnonymous ? "익명" : c.authorNickname}</span>
                                 {isSelected && <Badge className="bg-primary text-primary-foreground text-xs">참가자</Badge>}
                                 {!c.isAnonymous && c.roomId != null && (
-                                  <span className="text-xs text-muted-foreground">· {c.roomId} 분반</span>
+                                  <span className="text-sm font-medium text-foreground">· {c.roomId} 분반</span>
                                 )}
-                                <span className="text-sm text-muted-foreground">{formatDate(c.createdAt)}</span>
+                                <span className="text-xs text-muted-foreground">{formatDate(c.createdAt)}</span>
                                 {(c.isMine === true || c.mine === true) && editingCommentId !== c.commentId && (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -555,7 +555,7 @@ export default function PostDetailPage() {
                             {!isAnonymous && post?.author?.imageUrl && <AvatarImage src={post.author.imageUrl} alt="" />}
                             <AvatarFallback className="bg-primary/20 text-primary text-xs">{String(authorName).slice(-2)}</AvatarFallback>
                           </Avatar>
-                          <span className="flex-1 text-sm font-medium">{authorName}</span>
+                          <span className="flex-1 text-sm font-medium">{authorName}{post?.author?.roomId != null && <span className="text-foreground font-normal ml-1">· {post.author.roomId} 분반</span>}</span>
                           <Badge variant="outline" className="text-xs">작성자</Badge>
                         </div>
                         {isRecruiting && selectedParticipantIds.map((mid) => {
@@ -567,7 +567,7 @@ export default function PostDetailPage() {
                                 {c?.imageUrl && <AvatarImage src={c.imageUrl} alt="" />}
                                 <AvatarFallback className="bg-primary/20 text-primary text-xs">{String(nick).slice(-2)}</AvatarFallback>
                               </Avatar>
-                              <span className="flex-1 text-sm font-medium">{nick}</span>
+                              <span className="flex-1 text-sm font-medium">{nick}{c?.roomId != null && <span className="text-foreground font-normal ml-1">· {c.roomId} 분반</span>}</span>
                               <Badge className="bg-primary text-primary-foreground text-xs">참가자</Badge>
                             </div>
                           )
@@ -579,7 +579,7 @@ export default function PostDetailPage() {
                               {p.imageUrl && <AvatarImage src={p.imageUrl} alt="" />}
                               <AvatarFallback className="bg-primary/20 text-primary text-xs">{String(p.nickname || "").slice(-2)}</AvatarFallback>
                             </Avatar>
-                            <span className="flex-1 text-sm font-medium">{p.nickname}</span>
+                            <span className="flex-1 text-sm font-medium">{p.nickname}{p.roomId != null && <span className="text-foreground font-normal ml-1">· {p.roomId} 분반</span>}</span>
                             <Badge className="bg-primary text-primary-foreground text-xs">참가자</Badge>
                           </div>
                         ))}

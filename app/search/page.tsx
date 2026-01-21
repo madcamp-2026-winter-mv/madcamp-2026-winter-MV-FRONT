@@ -200,12 +200,12 @@ function SearchContent() {
                                     <span className="text-xs text-muted-foreground">{authorNick(post)}</span>
                                     {!isAnon(post) && post.author?.roomId != null && (
                                       <>
-                                        <span className="text-xs text-muted-foreground">·</span>
-                                        <span className="text-xs text-muted-foreground">{post.author.roomId} 분반</span>
+                                        <span className="text-muted-foreground">·</span>
+                                        <span className="text-sm font-medium text-foreground">{post.author.roomId} 분반</span>
                                       </>
                                     )}
-                                    <span className="text-xs text-muted-foreground">·</span>
-                                    <span className="text-xs text-muted-foreground">{timeStr(post)}</span>
+                                    <span className="text-muted-foreground">·</span>
+                                    <span className="text-[10px] text-muted-foreground">{timeStr(post)}</span>
                                   </div>
                                   <h3 className="font-semibold text-base mb-2 line-clamp-1">{post.title}</h3>
                                   <p className="text-sm text-muted-foreground line-clamp-2">{post.content}</p>
